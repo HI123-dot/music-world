@@ -6,7 +6,7 @@ import cors from "cors";
 // import admin from "firebase-admin";
 import * as winston from "winston";
 import * as expressWinston from "express-winston";
-// import { app as firebaseApp } from "./firebase";
+import { app as firebaseApp, songsCollection } from "./firebase";
 // import { v4 as uuidv4 } from "uuid";
 // import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier";
 
@@ -48,8 +48,13 @@ app.use(
   })
 );
 
-app.get("/getSongs", async ({}, {}) => {
-  return;
+app.get("/getSongs", async ({}, res) => {
+  const songRefs = await songsCollection.get();
+  const songs = await Promise.all(
+    songRefs.docs.map(async (songRef) => songRef.data())
+  );
+
+  res.status(200).json(songs);
 });
 
 app.use("/.netlify/functions/api", router);

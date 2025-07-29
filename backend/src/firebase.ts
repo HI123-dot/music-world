@@ -8,5 +8,15 @@ export const app = admin.initializeApp({
   credential: admin.credential.cert(configureAccount(serviceAccount))
 });
 
-// const db = admin.firestore();
-// Create collections here
+const db = admin.firestore();
+
+export const songsCollection: admin.firestore.CollectionReference<Song> = db
+  .collection("songs")
+  .withConverter({
+    fromFirestore(snapshot): Song {
+      return snapshot.data() as Song;
+    },
+    toFirestore(userData: Song) {
+      return userData;
+    }
+  });
