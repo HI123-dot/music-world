@@ -10,7 +10,7 @@
     color: #333;
   }
   
-  .btn-create {
+  .btncreate {
     padding: 15px 35px;
     font-size: 18px;
     background: #6a82fb;
@@ -22,7 +22,7 @@
     margin-top: 60px;
   }
   
-  .playlist-box {
+  .playlistbox {
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
@@ -31,18 +31,18 @@
     padding: 28px;
   }
   
-  .playlist-title {
+  .playlisttitle {
     margin-top: 0;
     color: #444;
     letter-spacing: 1px;
     font-weight: 600;
   }
   
-  .form-add-music {
+  .formaddmusic {
     margin-bottom: 20px;
   }
   
-  .input-link {
+  .inputlink {
     width: 65%;
     padding: 8px;
     border-radius: 6px;
@@ -51,7 +51,7 @@
     font-size: 16px;
   }
   
-  .btn-add {
+  .btnadd {
     padding: 9px 17px;
     background: #6a82fb;
     border: none;
@@ -62,17 +62,17 @@
     cursor: pointer;
   }
   
-  .playlist-list {
+  .playlistlist {
     list-style: none;
     padding: 0;
   }
   
-  .empty-text {
+  .emptytext {
     color: #888;
     font-style: italic;
   }
   
-  .playlist-item {
+  .playlistitem {
     background: #f5f8ff;
     margin: 7px 0;
     padding: 8px 10px;
@@ -82,7 +82,7 @@
     color: #345;
   }
   
-  .playlist-link {
+  .playlistlink {
     color: #3f51b5;
     text-decoration: underline;
   }

@@ -1,5 +1,6 @@
 import React, { useState, FormEvent } from "react";
 import styles from "../styles/Playlist.module.css";
+
 const Playlist: React.FC = () => {
   const [playlist, setPlaylist] = useState<string[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -18,8 +19,8 @@ const Playlist: React.FC = () => {
   };
 
   return (
-    <div className="container">
-      <h1 className="title">Music Sharing Program</h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>Music Sharing Program</h1>
       {!showCreate ? (
         <button onClick={handleCreatePlaylist} >
           Create Playlist
