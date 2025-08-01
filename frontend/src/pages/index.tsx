@@ -26,34 +26,34 @@ const Playlist: React.FC = () => {
           Create Playlist
         </button>
       ) : (
-        <div className="playlist-box">
-          <h2 className="playlist-title">Your Playlist</h2>
+        <div className={styles.playlistbox}>
+          <h2 className={styles.playlisttitle}>Your Playlist</h2>
 
-          <form onSubmit={handleAddMusic} className="form-add-music">
+          <form onSubmit={handleAddMusic} className={styles.formaddmusic}>
             <input
               type="url"
               placeholder="Paste music link (YouTube, Spotify...)"
               value={linkInput}
               onChange={(e) => setLinkInput(e.target.value)}
               required
-              className="input-link"
+              className={styles.inputlink}
             />
-            <button type="submit" className="btn-add">
+            <button type="submit" className={styles.btnadd}>
               Add
             </button>
           </form>
 
-          <ul className="playlist-list">
+          <ul className={styles.playlistlist}>
             {playlist.length === 0 && (
-              <li className="empty-text">No music added yet.</li>
+              <li className={styles.emptytext}>No music added yet.</li>
             )}
             {playlist.map((link, idx) => (
-              <li key={idx} className="playlist-item">
+              <li key={idx} className={styles.playlistitem}>
                 <a
                   href={link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="playlist-link"
+                  className={styles.playlistlink}
                 >
                   {link}
                 </a>
