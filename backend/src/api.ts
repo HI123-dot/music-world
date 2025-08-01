@@ -1,14 +1,10 @@
 import express from "express";
-// import express, { RequestHandler, Request, Response } from "express";
 
 import serverless from "serverless-http";
 import cors from "cors";
-// import admin from "firebase-admin";
 import * as winston from "winston";
 import * as expressWinston from "express-winston";
-import { app as firebaseApp, songsCollection } from "./firebase";
-// import { v4 as uuidv4 } from "uuid";
-// import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier";
+import { songsCollection, playlistsCollection } from "./firebase";
 
 // Constants and configurations
 const app = express();
@@ -50,11 +46,77 @@ app.use(
 
 app.get("/getSongs", async ({}, res) => {
   const songRefs = await songsCollection.get();
-  const songs = await Promise.all(
-    songRefs.docs.map(async (songRef) => songRef.data())
-  );
+  const songs = songRefs.docs.map((songRef) => songRef.data());
 
   res.status(200).json(songs);
+});
+
+app.get("/getPlaylists", async ({}, res) => {
+  const playlistRefs = await playlistsCollection.get();
+  const playlists = await Promise.all(
+    playlistRefs.docs.map(async (playlistRef) => {
+      const dbPlaylist = playlistRef.data();
+      const songs = await Promise.all(
+        dbPlaylist.songIds.map((songId) =>
+          songsCollection
+            .doc(songId)
+            .get()
+            .then((songDoc) => songDoc.data())
+        )
+      );
+
+      return {
+        name: dbPlaylist.name,
+        songs: songs.filter((song): song is Song => song !== undefined),
+        id: playlistRef.id
+      };
+    })
+  );
+
+  res.status(200).json(playlists);
+});
+
+app.post("/addPlaylist", async (req, res) => {
+  const name = req.body.name;
+  const playlist = {
+    name: name,
+    songIds: []
+  };
+  const playlistRef = playlistsCollection.doc();
+  await playlistRef.set(playlist);
+
+  res.status(200).json({
+    ...playlist,
+    id: playlistRef.id
+  });
+});
+
+app.post("/addSong", async (req, res) => {
+  const link = req.body.link;
+  const playlistId = req.body.playlistId;
+
+  // Add song to database
+  const song = {
+    link: link
+  };
+  const songRef = songsCollection.doc();
+  await songRef.set(song);
+
+  // Add song ID to playlist
+  const playlistRef = playlistsCollection.doc(playlistId);
+  const playlistDoc = await playlistRef.get();
+  if (!playlistDoc.exists) {
+    return res.status(404).json({ error: "Playlist not found" });
+  }
+
+  const dbPlaylist = playlistDoc.data() as DBPlaylist;
+  dbPlaylist.songIds.push(songRef.id);
+  await playlistRef.set(dbPlaylist);
+
+  res.status(200).json({
+    ...song,
+    id: songRef.id
+  });
 });
 
 app.use("/.netlify/functions/api", router);

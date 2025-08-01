@@ -20,3 +20,13 @@ export const songsCollection: admin.firestore.CollectionReference<Song> = db
       return userData;
     }
   });
+
+export const playlistsCollection: admin.firestore.CollectionReference<DBPlaylist> =
+  db.collection("playlists").withConverter({
+    fromFirestore(snapshot): DBPlaylist {
+      return snapshot.data() as DBPlaylist;
+    },
+    toFirestore(userData: DBPlaylist) {
+      return userData;
+    }
+  });
