@@ -160,6 +160,20 @@ app.delete("/deleteSong/:id", async (req, res) => {
   res.status(204).json({});
 });
 
+app.delete("/deletePlaylist/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const playlistRef = playlistsCollection.doc(id);
+  const playlist = (await playlistRef.get()).data();
+  playlist?.songIds.forEach(async (songId) => {
+  await songsCollection.doc(songId).delete();
+  });
+  await playlistRef.delete(); 
+
+
+  res.status(204).json({});
+});
+
 app.use("/.netlify/functions/api", router);
 
 if (process.env.ENVIRONMENT !== "production") {
