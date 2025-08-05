@@ -78,15 +78,16 @@ app.get("/getPlaylists", async ({}, res) => {
 
 app.post("/addPlaylist", async (req, res) => {
   const name = req.body.name;
-  const playlist = {
+  const dbPlaylist = {
     name: name,
     songIds: []
   };
   const playlistRef = playlistsCollection.doc();
-  await playlistRef.set(playlist);
+  await playlistRef.set(dbPlaylist);
 
   res.status(200).json({
-    ...playlist,
+    name: name,
+    songs: [],
     id: playlistRef.id
   });
 });
