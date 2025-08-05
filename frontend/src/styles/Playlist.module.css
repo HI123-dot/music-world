@@ -124,3 +124,36 @@
     font-size: 1.4rem;
   }
 }
+
+.songMenu {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -6px);
+  background: #19192c;
+  min-width: 96px;
+  border-radius: 7px;
+  box-shadow: 0 3px 18px #24247377;
+  z-index: 3;
+  padding: 5px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.songMenuBtn {
+  background: none;
+  border: none;
+  width: 100%;
+  color: #f06c7a;
+  text-align: left;
+  font-size: 1rem;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s;
+  border-radius: 5px;
+}
+.songMenuBtn:hover,
+.songMenuBtn:focus {
+  background: #232346;
+  color: #fff;
+}

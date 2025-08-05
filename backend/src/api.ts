@@ -4,7 +4,11 @@ import serverless from "serverless-http";
 import cors from "cors";
 import * as winston from "winston";
 import * as expressWinston from "express-winston";
-import { songsCollection, playlistsCollection } from "./firebase";
+import {
+  songsCollection,
+  playlistsCollection,
+  tagsCollection
+} from "./firebase";
 
 // Constants and configurations
 const app = express();
@@ -57,23 +61,40 @@ app.get("/getPlaylists", async ({}, res) => {
     playlistRefs.docs.map(async (playlistRef) => {
       const dbPlaylist = playlistRef.data();
       const songs = await Promise.all(
-        dbPlaylist.songIds.map((songId) =>
-          songsCollection
+        dbPlaylist.songIds.map(async (songId) => {
+          const song = await songsCollection
             .doc(songId)
             .get()
-            .then((songDoc) => songDoc.data())
-        )
+            .then((songDoc) => songDoc.data());
+          return {
+            ...song,
+            id: songId
+          };
+        })
       );
 
       return {
         name: dbPlaylist.name,
-        songs: songs.filter((song): song is Song => song !== undefined),
+        songs: songs.filter((song) => song !== undefined),
         id: playlistRef.id
       };
     })
   );
 
   res.status(200).json(playlists);
+});
+
+app.post("/addTag", async (req, res) => {
+  const name = req.body.name;
+  const tagRef = tagsCollection.doc();
+  await tagRef.set({
+    name: name
+  });
+
+  res.status(201).json({
+    name: name,
+    id: tagRef.id
+  });
 });
 
 app.post("/addPlaylist", async (req, res) => {
@@ -85,7 +106,7 @@ app.post("/addPlaylist", async (req, res) => {
   const playlistRef = playlistsCollection.doc();
   await playlistRef.set(dbPlaylist);
 
-  res.status(200).json({
+  res.status(201).json({
     name: name,
     songs: [],
     id: playlistRef.id
@@ -114,10 +135,29 @@ app.post("/addSong", async (req, res) => {
   dbPlaylist.songIds.push(songRef.id);
   await playlistRef.set(dbPlaylist);
 
-  res.status(200).json({
+  res.status(201).json({
     ...song,
     id: songRef.id
   });
+});
+
+app.delete("/deleteSong/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const songRef = songsCollection.doc(id);
+  await songRef.delete();
+
+  // Remove song ID from all playlists
+  const playlistRef = await playlistsCollection.get();
+  playlistRef.docs.forEach(async (playlistDoc) => {
+    const dbPlaylist = playlistDoc.data() as DBPlaylist;
+    if (dbPlaylist.songIds.includes(id)) {
+      dbPlaylist.songIds = dbPlaylist.songIds.filter((songId) => songId !== id);
+      await playlistsCollection.doc(playlistDoc.id).set(dbPlaylist);
+    }
+  });
+
+  res.status(204).json({});
 });
 
 app.use("/.netlify/functions/api", router);

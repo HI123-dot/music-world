@@ -30,3 +30,14 @@ export const playlistsCollection: admin.firestore.CollectionReference<DBPlaylist
       return userData;
     }
   });
+
+export const tagsCollection: admin.firestore.CollectionReference<Tag> = db
+  .collection("tags")
+  .withConverter({
+    fromFirestore(snapshot): Tag {
+      return snapshot.data() as Tag;
+    },
+    toFirestore(userData: Tag) {
+      return userData;
+    }
+  });

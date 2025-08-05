@@ -30,4 +30,8 @@ export default class API {
       playlistId: playlistId
     }).then((response) => response.data);
   }
+
+  static async deleteSong(songId: string): Promise<void> {
+    APIWrapper.delete(`${backendURL}/deleteSong/${songId}`);
+  }
 }
