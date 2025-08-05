@@ -24,6 +24,10 @@ export default class API {
     }).then((response) => response.data);
   }
 
+  static async deletePlaylist(playlistId: string): Promise<void> {
+    APIWrapper.delete(`${backendURL}/deletePlaylist/${playlistId}`);
+  }
+
   static async addSong(link: string, playlistId: string): Promise<Song> {
     return APIWrapper.post(`${backendURL}/addSong`, {
       link: link,

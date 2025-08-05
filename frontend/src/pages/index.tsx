@@ -24,7 +24,6 @@ const Playlist: React.FC = () => {
     API.getPlaylists().then((data) => setPlaylists(data));
   }, []);
 
-  // Create a new playlist
   const handleCreatePlaylist = async (e: FormEvent) => {
     e.preventDefault();
     if (!newPlaylistName.trim()) return;
@@ -34,7 +33,6 @@ const Playlist: React.FC = () => {
     setNewPlaylistName("");
   };
 
-  // Add a song to a specific playlist
   const handleAddMusic = async (
     e: FormEvent,
     playlistId: string
@@ -54,7 +52,6 @@ const Playlist: React.FC = () => {
     setLinkInputs((inputs) => ({ ...inputs, [playlistId]: "" }));
   };
 
-  // Delete a song
   const handleDeleteSong = async (playlistId: string, songId: string) => {
     await API.deleteSong(songId);
     setPlaylists((prev) =>
@@ -65,6 +62,11 @@ const Playlist: React.FC = () => {
       )
     );
     setOpenMenuSongId(null);
+  };
+
+  const handleDeletePlaylist = async (playlistId: string) => {
+    await API.deletePlaylist(playlistId);
+    setPlaylists((prev) => prev.filter((p) => p.id !== playlistId));
   };
 
   return (
@@ -96,7 +98,21 @@ const Playlist: React.FC = () => {
         <ul className={styles.playlistlist}>
           {playlists.map(pl => (
             <li key={pl.id} className={styles.playlistbox}>
-              <div className={styles.playlisttitle}>{pl.name}</div>
+              <div className={styles.playlistTitleRow}>
+                <div className={styles.playlisttitle}>{pl.name}</div>
+                <button
+                  className={styles.playlistDeleteBtn}
+                  onClick={() => handleDeletePlaylist(pl.id)}
+                  aria-label="Delete playlist"
+                  title="Delete playlist"
+                >
+                  {/* Trash icon SVG */}
+                  <svg height="20" width="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M6 7V15C6 15.55 6.45 16 7 16H13C13.55 16 14 15.55 14 15V7M3 7H17M8 7V15M12 7V15M4 7V17C4 17.55 4.45 18 5 18H15C15.55 18 16 17.55 16 17V7" stroke="#f06c7a" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                    <rect x="8" y="2" width="4" height="2" rx="1" stroke="#f06c7a" strokeWidth="1.3"/>
+                  </svg>
+                </button>
+              </div>
               <form
                 onSubmit={(e) => handleAddMusic(e, pl.id)}
                 className={styles.formaddmusic}
@@ -138,7 +154,6 @@ const Playlist: React.FC = () => {
                       >
                         {song.link}
                       </a>
-                      {/* Song context menu on hover */}
                       {openMenuSongId === song.id && (
                         <div className={styles.songMenu}>
                           <button

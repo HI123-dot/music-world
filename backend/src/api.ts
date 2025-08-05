@@ -166,10 +166,9 @@ app.delete("/deletePlaylist/:id", async (req, res) => {
   const playlistRef = playlistsCollection.doc(id);
   const playlist = (await playlistRef.get()).data();
   playlist?.songIds.forEach(async (songId) => {
-  await songsCollection.doc(songId).delete();
+    await songsCollection.doc(songId).delete();
   });
-  await playlistRef.delete(); 
-
+  await playlistRef.delete();
 
   res.status(204).json({});
 });
