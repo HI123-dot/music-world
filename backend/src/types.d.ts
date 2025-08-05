@@ -9,4 +9,7 @@ type DBPlaylist = {
 
 type Tag = {
   name: string;
+  songIds: string[];
+  tagColor: string[];
+
 };

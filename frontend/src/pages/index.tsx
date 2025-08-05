@@ -160,7 +160,16 @@ const Playlist: React.FC = () => {
                             className={styles.songMenuBtn}
                             onClick={() => handleDeleteSong(pl.id, song.id)}
                           >
+                          
                             Delete
+                          </button>
+
+                          <button
+                            className={styles.songMenuBtn}
+                            //onClick={() => handleAddTag(, song.id)}
+                          >
+                          
+                            Add Tag
                           </button>
                         </div>
                       )}

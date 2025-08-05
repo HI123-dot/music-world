@@ -9,6 +9,7 @@ import {
   playlistsCollection,
   tagsCollection
 } from "./firebase";
+import { addColors } from "winston/lib/winston/config";
 
 // Constants and configurations
 const app = express();
@@ -87,9 +88,6 @@ app.get("/getPlaylists", async ({}, res) => {
 app.post("/addTag", async (req, res) => {
   const name = req.body.name;
   const tagRef = tagsCollection.doc();
-  await tagRef.set({
-    name: name
-  });
 
   res.status(201).json({
     name: name,
@@ -140,6 +138,42 @@ app.post("/addSong", async (req, res) => {
     id: songRef.id
   });
 });
+
+app.post("/tagSong", async (req, res) => {
+  try {
+    const { name, tagId, tagColor } = req.body;
+
+    // Validate required fields
+    if (!name || !tagId || !tagColor) {
+      return res.status(400).json({ error: "Missing required fields: name, tagId, or tagColor" });
+    }
+
+    // Prepare the tag data to store
+    const tag = {
+      tagId,
+      name,
+      tagColor,
+      songIds: []  // Assuming initially no songs are associated
+    };
+
+    // Add a new document to the collection with auto-generated ID
+    const tagRef = tagsCollection.doc(); 
+
+    await tagRef.set(tag);
+
+    // Respond with created tag info
+    res.status(201).json({
+      id: tagRef.id,
+      name,
+      songs: [],  // matches songIds, empty array for now
+      tagColor
+    });
+  } catch (error) {
+    console.error("Error creating tag:", error);
+    res.status(500).json({ error: "Failed to create tag" });
+  }
+});
+
 
 app.delete("/deleteSong/:id", async (req, res) => {
   const id = req.params.id;
