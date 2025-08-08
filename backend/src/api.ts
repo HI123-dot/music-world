@@ -9,7 +9,6 @@ import {
   playlistsCollection,
   tagsCollection
 } from "./firebase";
-import { addColors } from "winston/lib/winston/config";
 
 // Constants and configurations
 const app = express();
@@ -61,18 +60,37 @@ app.get("/getPlaylists", async ({}, res) => {
   const playlists = await Promise.all(
     playlistRefs.docs.map(async (playlistRef) => {
       const dbPlaylist = playlistRef.data();
-      const songs = await Promise.all(
-        dbPlaylist.songIds.map(async (songId) => {
-          const song = await songsCollection
-            .doc(songId)
-            .get()
-            .then((songDoc) => songDoc.data());
-          return {
-            ...song,
-            id: songId
-          };
-        })
-      );
+      const songs = (
+        await Promise.all(
+          dbPlaylist.songIds.map(async (songId) => {
+            const dbSong = await songsCollection
+              .doc(songId)
+              .get()
+              .then((songDoc) => songDoc.data());
+            if (!dbSong) return undefined;
+
+            const tags = (
+              await Promise.all(
+                dbSong.tagIds.map(async (id) => {
+                  const tag = (await tagsCollection.doc(id).get()).data();
+                  if (!tag) return null;
+                  return {
+                    id,
+                    name: tag.name,
+                    tagColor: tag.tagColor
+                  };
+                })
+              )
+            ).filter((tag) => tag !== null);
+
+            return {
+              link: dbSong.link,
+              tags: tags,
+              id: songId
+            };
+          })
+        )
+      ).filter((song) => song != undefined);
 
       return {
         name: dbPlaylist.name,
@@ -86,13 +104,29 @@ app.get("/getPlaylists", async ({}, res) => {
 });
 
 app.post("/addTag", async (req, res) => {
-  const name = req.body.name;
+  const name = req.body.name as string;
+  const tagColor = req.body.tagColor as string;
   const tagRef = tagsCollection.doc();
+  await tagRef.set({
+    name: name,
+    tagColor: tagColor
+  });
 
   res.status(201).json({
     name: name,
+    tagColor: tagColor,
     id: tagRef.id
   });
+});
+
+app.get("/getTags", async ({}, res) => {
+  const tagRefs = await tagsCollection.get();
+  const tags = tagRefs.docs.map((tagRef) => ({
+    ...tagRef.data(),
+    id: tagRef.id
+  }));
+
+  res.status(200).json(tags);
 });
 
 app.post("/addPlaylist", async (req, res) => {
@@ -116,11 +150,12 @@ app.post("/addSong", async (req, res) => {
   const playlistId = req.body.playlistId;
 
   // Add song to database
-  const song = {
-    link: link
+  const dbSong = {
+    link: link,
+    tagIds: []
   };
   const songRef = songsCollection.doc();
-  await songRef.set(song);
+  await songRef.set(dbSong);
 
   // Add song ID to playlist
   const playlistRef = playlistsCollection.doc(playlistId);
@@ -134,46 +169,53 @@ app.post("/addSong", async (req, res) => {
   await playlistRef.set(dbPlaylist);
 
   res.status(201).json({
-    ...song,
+    link: link,
+    tags: [],
     id: songRef.id
   });
 });
 
 app.post("/tagSong", async (req, res) => {
-  try {
-    const { name, tagId, tagColor } = req.body;
+  const { songId, tagId } = req.body;
 
-    // Validate required fields
-    if (!name || !tagId || !tagColor) {
-      return res.status(400).json({ error: "Missing required fields: name, tagId, or tagColor" });
-    }
-
-    // Prepare the tag data to store
-    const tag = {
-      tagId,
-      name,
-      tagColor,
-      songIds: []  // Assuming initially no songs are associated
-    };
-
-    // Add a new document to the collection with auto-generated ID
-    const tagRef = tagsCollection.doc(); 
-
-    await tagRef.set(tag);
-
-    // Respond with created tag info
-    res.status(201).json({
-      id: tagRef.id,
-      name,
-      songs: [],  // matches songIds, empty array for now
-      tagColor
-    });
-  } catch (error) {
-    console.error("Error creating tag:", error);
-    res.status(500).json({ error: "Failed to create tag" });
+  if (!songId || !tagId) {
+    return res
+      .status(400)
+      .json({ error: "Missing required fields: songId, tagId" });
   }
-});
 
+  const songRef = songsCollection.doc(songId);
+  const dbSong = (await songRef.get()).data();
+  if (!dbSong) {
+    return res.status(404).json({ error: "Song not found" });
+  }
+
+  await songRef.set({
+    ...dbSong,
+    tagIds: Array.from(new Set([...dbSong.tagIds, tagId]))
+  });
+
+  // Making the response
+  const tags = (
+    await Promise.all(
+      dbSong.tagIds.map(async (id) => {
+        const tag = (await tagsCollection.doc(id).get()).data();
+        if (!tag) return null;
+        return {
+          id,
+          name: tag.name,
+          tagColor: tag.tagColor
+        };
+      })
+    )
+  ).filter((tag) => tag !== null);
+
+  res.status(200).json({
+    id: songRef.id,
+    link: dbSong.link,
+    tags: tags
+  });
+});
 
 app.delete("/deleteSong/:id", async (req, res) => {
   const id = req.params.id;

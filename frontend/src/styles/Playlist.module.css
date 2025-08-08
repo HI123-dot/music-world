@@ -50,7 +50,8 @@
   transition: background 0.13s;
   font-weight: 500;
 }
-.btnadd:hover {
+.btnadd:hover,
+.btnadd:focus {
   background: #414de2;
 }
 
@@ -66,44 +67,12 @@
   margin-bottom: 0;
 }
 
-/* Each playlist is a visually separated box/list item */
 .playlistbox {
   background: #25263a;
   border-radius: 12px;
   padding: 20px 18px 14px 18px;
   box-shadow: 0 2px 8px #2227;
   margin-bottom: 28px;
-}
-
-/* For the playlist title inside the box */
-.playlisttitle {
-  font-weight: bold;
-  font-size: 1.22rem;
-  margin-bottom: 12px;
-}
-
-.playlistitem {
-  margin-bottom: 6px;
-  word-break: break-all;
-}
-
-.playlistlink {
-  background: none;
-  color: #a9aceb;
-  border: none;
-  text-decoration: none;
-  font-size: 1.08rem;
-  cursor: pointer;
-  transition: color 0.15s;
-  padding: 3px 0;
-  border-radius: 3px;
-  word-break: break-all;
-}
-.playlistlink:hover,
-.playlistlink:focus {
-  color: #fff;
-  outline: none;
-  background: #22225c24;
 }
 
 .playlistTitleRow {
@@ -132,13 +101,158 @@
   display: block;
 }
 
+.playlisttitle {
+  font-weight: bold;
+  font-size: 1.22rem;
+  margin-bottom: 0;
+}
+
+.playlistitem {
+  margin-bottom: 15px;
+}
+
+.songMainRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.playlistlink {
+  background: none;
+  color: #a9aceb;
+  border: none;
+  text-decoration: none;
+  font-size: 1.08rem;
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 3px 0;
+  border-radius: 3px;
+  word-break: break-all;
+  margin-bottom: 4px;
+  display: block;
+}
+.playlistlink:hover,
+.playlistlink:focus {
+  color: #fff;
+  outline: none;
+  background: #22225c24;
+}
+
+.songBtn {
+  background: none;
+  border: none;
+  color: #ffa6b0;
+  font-size: 1.08rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-left: 2px;
+}
+.songBtn:hover,
+.songBtn:focus {
+  background: #433258;
+  color: #fff;
+}
+
+.songTags {
+  margin: 6px 0 2px 0;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 20px;
+}
+.tagPill {
+  border-radius: 12px;
+  padding: 4px 12px;
+  color: #fff;
+  font-size: 0.87rem;
+  font-weight: 500;
+  border: none;
+  margin: 0 2px 2px 0;
+  cursor: pointer;
+  opacity: 0.9;
+  white-space: nowrap;
+  box-shadow: 0 1px 5px #2223;
+  transition: opacity 0.13s;
+}
+.tagPill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.tagPill:hover,
+.tagPill:focus {
+  opacity: 1;
+}
+
 .emptytext {
   color: #aaa;
   font-style: italic;
   margin-top: 8px;
 }
 
-/* Responsive improvements */
+.tagPanel {
+  background: #2a2140;
+  border-radius: 7px;
+  box-shadow: 0 3px 18px #24247369;
+  padding: 16px 16px 12px 16px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.tagPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.tagPanelClose {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #aaa;
+  cursor: pointer;
+  padding: 0 7px;
+  border-radius: 3px;
+  transition: background 0.12s;
+}
+.tagPanelClose:hover {
+  background: #44325f;
+  color: #fff;
+}
+
+.tagMenuTags {
+  margin-bottom: 18px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.createTagBox {
+  margin-top: 12px;
+}
+
+.label {
+  display: block;
+  color: #ecdeff;
+  margin-bottom: 4px;
+  font-size: 0.96rem;
+  font-weight: 500;
+  margin-top: 5px;
+}
+
+.tagCreateForm {
+  padding: 8px 0 2px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+  background: none;
+}
+
 @media (max-width: 650px) {
   .container {
     padding: 14px 8px 20px 8px;
@@ -149,37 +263,7 @@
   .title {
     font-size: 1.4rem;
   }
-}
-
-.songMenu {
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  transform: translate(-50%, -6px);
-  background: #19192c;
-  min-width: 96px;
-  border-radius: 7px;
-  box-shadow: 0 3px 18px #24247377;
-  z-index: 3;
-  padding: 5px 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.songMenuBtn {
-  background: none;
-  border: none;
-  width: 100%;
-  color: #f06c7a;
-  text-align: left;
-  font-size: 1rem;
-  padding: 7px 16px;
-  cursor: pointer;
-  transition: background 0.13s, color 0.13s;
-  border-radius: 5px;
-}
-.songMenuBtn:hover,
-.songMenuBtn:focus {
-  background: #232346;
-  color: #fff;
+  .tagPanel {
+    padding: 9px 6px 5px 6px;
+  }
 }

@@ -1,5 +1,12 @@
 type Song = {
   link: string;
+  tags: Tag[];
+  id: string;
+};
+
+type DBSong = {
+  link: string;
+  tagIds: string[];
 };
 
 type DBPlaylist = {
@@ -9,7 +16,5 @@ type DBPlaylist = {
 
 type Tag = {
   name: string;
-  songIds: string[];
-  tagColor: string[];
-
+  tagColor: string;
 };

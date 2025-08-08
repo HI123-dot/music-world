@@ -11,21 +11,16 @@ export default class API {
       (response) => response.data
     );
   }
+  static async getTags(): Promise<Array<Tag>> {
+    return APIWrapper.get(`${backendURL}/getTags`).then(
+      (response) => response.data
+    );
+  }
 
   static async getPlaylists(): Promise<Array<Playlist>> {
     return APIWrapper.get(`${backendURL}/getPlaylists`).then(
       (response) => response.data
     );
-  }
-
-  static async addPlaylist(name: string): Promise<Playlist> {
-    return APIWrapper.post(`${backendURL}/addPlaylist`, {
-      name: name
-    }).then((response) => response.data);
-  }
-
-  static async deletePlaylist(playlistId: string): Promise<void> {
-    APIWrapper.delete(`${backendURL}/deletePlaylist/${playlistId}`);
   }
 
   static async addSong(link: string, playlistId: string): Promise<Song> {
@@ -35,7 +30,31 @@ export default class API {
     }).then((response) => response.data);
   }
 
+  static async addTag(tagColor: string, name: string): Promise<Tag> {
+    return APIWrapper.post(`${backendURL}/addTag`, {
+      tagColor: tagColor,
+      name: name
+    }).then((response) => response.data);
+  }
+
+  static async addPlaylist(name: string): Promise<Playlist> {
+    return APIWrapper.post(`${backendURL}/addPlaylist`, {
+      name: name
+    }).then((response) => response.data);
+  }
+
+  static async tagSong(songId: string, tagId: string): Promise<Song> {
+    return APIWrapper.post(`${backendURL}/tagSong`, {
+      songId: songId,
+      tagId: tagId
+    }).then((response) => response.data);
+  }
+
   static async deleteSong(songId: string): Promise<void> {
     APIWrapper.delete(`${backendURL}/deleteSong/${songId}`);
+  }
+
+  static async deletePlaylist(playlistId: string): Promise<void> {
+    APIWrapper.delete(`${backendURL}/deletePlaylist/${playlistId}`);
   }
 }

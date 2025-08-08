@@ -10,13 +10,13 @@ export const app = admin.initializeApp({
 
 const db = admin.firestore();
 
-export const songsCollection: admin.firestore.CollectionReference<Song> = db
+export const songsCollection: admin.firestore.CollectionReference<DBSong> = db
   .collection("songs")
   .withConverter({
-    fromFirestore(snapshot): Song {
-      return snapshot.data() as Song;
+    fromFirestore(snapshot): DBSong {
+      return snapshot.data() as DBSong;
     },
-    toFirestore(userData: Song) {
+    toFirestore(userData: DBSong) {
       return userData;
     }
   });
