@@ -15,13 +15,11 @@ const Playlist: React.FC = () => {
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState("#526afe");
 
-  // Load playlists and tags once on mount
   useEffect(() => {
     API.getPlaylists().then(setPlaylists);
     API.getTags().then(setTags);
   }, []);
 
-  // Create playlist
   const handleCreatePlaylist = async (e: FormEvent) => {
     e.preventDefault();
     if (!newPlaylistName.trim()) return;
@@ -31,7 +29,6 @@ const Playlist: React.FC = () => {
     setNewPlaylistName("");
   };
 
-  // Add song to playlist
   const handleAddMusic = async (e: FormEvent, playlistId: string) => {
     e.preventDefault();
     const link = linkInputs[playlistId]?.trim();
@@ -45,7 +42,6 @@ const Playlist: React.FC = () => {
     setLinkInputs((inputs) => ({ ...inputs, [playlistId]: "" }));
   };
 
-  // Delete song
   const handleDeleteSong = async (playlistId: string, songId: string) => {
     await API.deleteSong(songId);
     setPlaylists((prev) =>
@@ -59,17 +55,15 @@ const Playlist: React.FC = () => {
     if (creatingTagForSong === songId) setCreatingTagForSong(null);
   };
 
-  // Delete playlist
   const handleDeletePlaylist = async (playlistId: string) => {
     await API.deletePlaylist(playlistId);
     setPlaylists((prev) => prev.filter((p) => p.id !== playlistId));
   };
 
-  // Check if song already has the tag
   const songHasTag = (song: Song, tag: Tag) =>
     song.tags.some((t) => t.id === tag.id);
 
-  // Optimistic tag song with existing tag
+  // Add tag to song with optimistic UI update and rollback on failure
   const handleTagSong = async (
     playlistId: string,
     songId: string,
@@ -78,7 +72,8 @@ const Playlist: React.FC = () => {
     const tagToAdd = tags.find((t) => t.id === tagId);
     if (!tagToAdd) return;
 
-    // Optimistically update UI by adding tag to song
+    const prevPlaylists = [...playlists];
+
     setPlaylists((pls) =>
       pls.map((p) =>
         p.id === playlistId
@@ -86,48 +81,52 @@ const Playlist: React.FC = () => {
               ...p,
               songs: p.songs.map((s) => {
                 if (s.id !== songId) return s;
-                // Avoid duplicates
                 if (s.tags.some((t) => t.id === tagId)) return s;
                 return { ...s, tags: [...s.tags, tagToAdd] };
-              })
+              }),
             }
           : p
       )
     );
 
     try {
-      // Sync with backend
-      const updatedSong = await API.tagSong(songId, tagId);
-      // Replace with latest backend data
-      setPlaylists((pls) =>
-        pls.map((p) =>
-          p.id === playlistId
-            ? {
-                ...p,
-                songs: p.songs.map((s) => (s.id === songId ? updatedSong : s))
-              }
-            : p
-        )
-      );
+      await API.tagSong(songId, tagId);
     } catch (error) {
-      // Rollback if API call fails
-      setPlaylists((pls) =>
-        pls.map((p) =>
-          p.id === playlistId
-            ? {
-                ...p,
-                songs: p.songs.map((s) => {
-                  if (s.id !== songId) return s;
-                  return {
-                    ...s,
-                    tags: s.tags.filter((t) => t.id !== tagId)
-                  };
-                })
-              }
-            : p
-        )
-      );
+      setPlaylists(prevPlaylists);
       console.error("Failed to tag song:", error);
+    }
+  };
+
+  // Delete tag from song with optimistic UI update and rollback on failure
+  const handleDeleteTag = async (
+    playlistId: string,
+    songId: string,
+    tagId: string
+  ) => {
+    const prevPlaylists = [...playlists];
+
+    setPlaylists((pls) =>
+      pls.map((p) =>
+        p.id === playlistId
+          ? {
+              ...p,
+              songs: p.songs.map((s) => {
+                if (s.id !== songId) return s;
+                return {
+                  ...s,
+                  tags: s.tags.filter((t) => t.id !== tagId),
+                };
+              }),
+            }
+          : p
+      )
+    );
+
+    try {
+      await API.deleteTag(songId, tagId);
+    } catch (error) {
+      setPlaylists(prevPlaylists);
+      console.error("Failed to delete tag from song:", error);
     }
   };
 
@@ -139,32 +138,12 @@ const Playlist: React.FC = () => {
     e.preventDefault();
 
     try {
-      // Create the new tag in backend
       const newTag = await API.addTag(newTagColor, newTagName);
-
-      // Optimistically update the global tags list to include the new tag (so it appears in the modal)
       setTags((prev) => [...prev, newTag]);
-
-      // Do NOT optimistically update song tags here (remove previous tag addition)
-      // Instead call tagSong and update UI only after success
-      const updatedSong = await API.tagSong(songId, newTag.id);
-
-      // Update playlists with authoritative updated song info
-      setPlaylists((pls) =>
-        pls.map((p) =>
-          p.id === playlistId
-            ? {
-                ...p,
-                songs: p.songs.map((s) => (s.id === songId ? updatedSong : s))
-              }
-            : p
-        )
-      );
+      await API.tagSong(songId, newTag.id);
+      const refreshedPlaylists = await API.getPlaylists();
+      setPlaylists(refreshedPlaylists);
     } catch (error) {
-      // On failure, you may want to remove new tag from global tags list
-      // (if you optimistically added it above)
-      setTags((prev) => prev.filter((t) => t.id !== newTag?.id));
-
       console.error("Failed to create and tag new tag:", error);
     }
 
@@ -241,7 +220,7 @@ const Playlist: React.FC = () => {
                   onChange={(e) =>
                     setLinkInputs((inputs) => ({
                       ...inputs,
-                      [pl.id]: e.target.value
+                      [pl.id]: e.target.value,
                     }))
                   }
                   required
@@ -265,18 +244,24 @@ const Playlist: React.FC = () => {
                       >
                         {song.link}
                       </a>
-                      {/* Render tag pills below the link */}
+                      {/* Tags on song - click a tag to remove */}
                       <div className={styles.songTags}>
-                        {song.tags &&
-                          song.tags.map((tag) => (
-                            <span
-                              key={tag.id}
-                              className={styles.tagPill}
-                              style={{ background: tag.tagColor }}
-                            >
-                              {tag.name}
-                            </span>
-                          ))}
+                        {song.tags?.map((tag) => (
+                          <span
+                            key={tag.id}
+                            className={styles.tagPill}
+                            style={{
+                              background: tag.tagColor,
+                              cursor: "pointer",
+                            }}
+                            title={`Click to remove tag "${tag.name}"`}
+                            onClick={() =>
+                              handleDeleteTag(pl.id, song.id, tag.id)
+                            }
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
                       </div>
                       <div className={styles.songMainRow}>
                         <button
@@ -297,7 +282,7 @@ const Playlist: React.FC = () => {
                           aria-label="Tag song"
                           title="Tag song"
                         >
-                          🏷️ Tag
+                          Tag
                         </button>
                       </div>
                       {expandedTagPanel === song.id && (
@@ -324,23 +309,22 @@ const Playlist: React.FC = () => {
                                   style={{
                                     background: tag.tagColor,
                                     opacity: songHasTag(song, tag) ? 0.6 : 1,
-                                    cursor: songHasTag(song, tag)
-                                      ? "not-allowed"
-                                      : "pointer"
+                                    cursor: "pointer",
                                   }}
-                                  disabled={songHasTag(song, tag)}
-                                  onClick={() =>
-                                    handleTagSong(pl.id, song.id, tag.id)
-                                  }
+                                  onClick={() => {
+                                    if (songHasTag(song, tag)) {
+                                      handleDeleteTag(pl.id, song.id, tag.id);
+                                    } else {
+                                      handleTagSong(pl.id, song.id, tag.id);
+                                    }
+                                  }}
                                 >
                                   {tag.name}
                                   {songHasTag(song, tag) ? " (Tagged)" : ""}
                                 </button>
                               ))
                             ) : (
-                              <span
-                                style={{ fontSize: "0.95em", color: "#aaa" }}
-                              >
+                              <span style={{ fontSize: "0.95em", color: "#aaa" }}>
                                 No tags yet
                               </span>
                             )}
@@ -371,9 +355,7 @@ const Playlist: React.FC = () => {
                                   id={`new-tag-name-${song.id}`}
                                   type="text"
                                   value={newTagName}
-                                  onChange={(e) =>
-                                    setNewTagName(e.target.value)
-                                  }
+                                  onChange={(e) => setNewTagName(e.target.value)}
                                   placeholder="ex: Happy"
                                   required
                                   className={styles.inputlink}
@@ -389,18 +371,16 @@ const Playlist: React.FC = () => {
                                   id={`new-tag-color-${song.id}`}
                                   type="color"
                                   value={newTagColor}
-                                  onChange={(e) =>
-                                    setNewTagColor(e.target.value)
-                                  }
+                                  onChange={(e) => setNewTagColor(e.target.value)}
                                   style={{
                                     marginBottom: "10px",
                                     marginTop: "2px",
                                     height: "36px",
                                     width: "64px",
-                                    padding: "0",
+                                    padding: 0,
                                     border: "none",
                                     background: "none",
-                                    display: "block"
+                                    display: "block",
                                   }}
                                 />
                                 <button
