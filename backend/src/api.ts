@@ -90,18 +90,14 @@ app.get("/getTags", async ({}, res) => {
 
 app.post("/addPlaylist", async (req, res) => {
   const name = req.body.name;
-  const dbPlaylist = {
-    name: name,
-    songIds: []
-  };
-  const playlistRef = playlistsCollection.doc();
-  await playlistRef.set(dbPlaylist);
-
-  res.status(201).json({
+  const playlistModel = new PlaylistModel();
+  const playlist = await playlistModel.createPlaylist({
     name: name,
     songs: [],
-    id: playlistRef.id
+    id: ""
   });
+
+  res.status(201).json(playlist);
 });
 
 app.post("/addSong", async (req, res) => {
