@@ -9,7 +9,6 @@ import {
   playlistsCollection,
   tagsCollection
 } from "./firebase";
-import { json } from "body-parser";
 
 // Constants and configurations
 const app = express();
@@ -218,19 +217,15 @@ app.post("/tagSong", async (req, res) => {
   });
 });
 
-
-app.delete("/deleteTags/:songId/:tagId", async (req, res) => {
-  const {songId, tagId} = req.params;
+app.delete("/deleteTag/:songId/:tagId", async (req, res) => {
+  const { songId, tagId } = req.params;
   const songRef = songsCollection.doc(songId);
   const songDoc = await songRef.get();
   const songData = songDoc.data() as DBSong;
-  const currentTagIds = songData.tagIds || [];
-  const updatedTagIds = currentTagIds.filter(id => id !== tagId);
-  await songRef.update({ tagIds: updatedTagIds})
-  res.status(200).json({
-    removedTagId: songId,
-    remainingTags: updatedTagIds})
-  
+  const currentTagIds = songData.tagIds;
+  const updatedTagIds = currentTagIds.filter((id) => id !== tagId);
+  await songRef.update({ tagIds: updatedTagIds });
+  res.status(204).json({});
 });
 
 app.delete("/deleteSong/:id", async (req, res) => {
@@ -250,7 +245,7 @@ app.delete("/deleteSong/:id", async (req, res) => {
   });
 
   res.status(204).json({});
-})
+});
 
 app.delete("/deletePlaylist/:id", async (req, res) => {
   const id = req.params.id;

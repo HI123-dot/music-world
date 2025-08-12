@@ -83,7 +83,7 @@ const Playlist: React.FC = () => {
                 if (s.id !== songId) return s;
                 if (s.tags.some((t) => t.id === tagId)) return s;
                 return { ...s, tags: [...s.tags, tagToAdd] };
-              }),
+              })
             }
           : p
       )
@@ -114,9 +114,9 @@ const Playlist: React.FC = () => {
                 if (s.id !== songId) return s;
                 return {
                   ...s,
-                  tags: s.tags.filter((t) => t.id !== tagId),
+                  tags: s.tags.filter((t) => t.id !== tagId)
                 };
-              }),
+              })
             }
           : p
       )
@@ -220,7 +220,7 @@ const Playlist: React.FC = () => {
                   onChange={(e) =>
                     setLinkInputs((inputs) => ({
                       ...inputs,
-                      [pl.id]: e.target.value,
+                      [pl.id]: e.target.value
                     }))
                   }
                   required
@@ -252,7 +252,7 @@ const Playlist: React.FC = () => {
                             className={styles.tagPill}
                             style={{
                               background: tag.tagColor,
-                              cursor: "pointer",
+                              cursor: "pointer"
                             }}
                             title={`Click to remove tag "${tag.name}"`}
                             onClick={() =>
@@ -309,7 +309,7 @@ const Playlist: React.FC = () => {
                                   style={{
                                     background: tag.tagColor,
                                     opacity: songHasTag(song, tag) ? 0.6 : 1,
-                                    cursor: "pointer",
+                                    cursor: "pointer"
                                   }}
                                   onClick={() => {
                                     if (songHasTag(song, tag)) {
@@ -324,7 +324,9 @@ const Playlist: React.FC = () => {
                                 </button>
                               ))
                             ) : (
-                              <span style={{ fontSize: "0.95em", color: "#aaa" }}>
+                              <span
+                                style={{ fontSize: "0.95em", color: "#aaa" }}
+                              >
                                 No tags yet
                               </span>
                             )}
@@ -355,7 +357,9 @@ const Playlist: React.FC = () => {
                                   id={`new-tag-name-${song.id}`}
                                   type="text"
                                   value={newTagName}
-                                  onChange={(e) => setNewTagName(e.target.value)}
+                                  onChange={(e) =>
+                                    setNewTagName(e.target.value)
+                                  }
                                   placeholder="ex: Happy"
                                   required
                                   className={styles.inputlink}
@@ -371,7 +375,9 @@ const Playlist: React.FC = () => {
                                   id={`new-tag-color-${song.id}`}
                                   type="color"
                                   value={newTagColor}
-                                  onChange={(e) => setNewTagColor(e.target.value)}
+                                  onChange={(e) =>
+                                    setNewTagColor(e.target.value)
+                                  }
                                   style={{
                                     marginBottom: "10px",
                                     marginTop: "2px",
@@ -380,7 +386,7 @@ const Playlist: React.FC = () => {
                                     padding: 0,
                                     border: "none",
                                     background: "none",
-                                    display: "block",
+                                    display: "block"
                                   }}
                                 />
                                 <button

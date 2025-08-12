@@ -50,10 +50,11 @@ export default class API {
     }).then((response) => response.data);
   }
 
-  static async deleteTag(songId: string, tagId: string ): Promise<void> {
-    return APIWrapper.delete(`${backendURL}/deleteTags/${songId},${tagId}`)
-      .then((response) => response.data);
-}
+  static async deleteTag(songId: string, tagId: string): Promise<void> {
+    return APIWrapper.delete(`${backendURL}/deleteTag/${songId}/${tagId}`).then(
+      (response) => response.data
+    );
+  }
 
   static async deleteSong(songId: string): Promise<void> {
     APIWrapper.delete(`${backendURL}/deleteSong/${songId}`);
