@@ -14,6 +14,12 @@ type DBPlaylist = {
   songIds: string[];
 };
 
+type Playlist = {
+  name: string;
+  songs: Song[];
+  id: string;
+};
+
 type Tag = {
   name: string;
   tagColor: string;

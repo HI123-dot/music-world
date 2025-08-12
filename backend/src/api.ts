@@ -9,6 +9,7 @@ import {
   playlistsCollection,
   tagsCollection
 } from "./firebase";
+import PlaylistModel from "./db/PlaylistModel";
 
 // Constants and configurations
 const app = express();
@@ -56,50 +57,8 @@ app.get("/getSongs", async ({}, res) => {
 });
 
 app.get("/getPlaylists", async ({}, res) => {
-  const playlistRefs = await playlistsCollection.get();
-  const playlists = await Promise.all(
-    playlistRefs.docs.map(async (playlistRef) => {
-      const dbPlaylist = playlistRef.data();
-      const songs = (
-        await Promise.all(
-          dbPlaylist.songIds.map(async (songId) => {
-            const dbSong = await songsCollection
-              .doc(songId)
-              .get()
-              .then((songDoc) => songDoc.data());
-            if (!dbSong) return undefined;
-
-            const tags = (
-              await Promise.all(
-                dbSong.tagIds.map(async (id) => {
-                  const tag = (await tagsCollection.doc(id).get()).data();
-                  if (!tag) return null;
-                  return {
-                    id,
-                    name: tag.name,
-                    tagColor: tag.tagColor
-                  };
-                })
-              )
-            ).filter((tag) => tag !== null);
-
-            return {
-              link: dbSong.link,
-              tags: tags,
-              id: songId
-            };
-          })
-        )
-      ).filter((song) => song != undefined);
-
-      return {
-        name: dbPlaylist.name,
-        songs: songs.filter((song) => song !== undefined),
-        id: playlistRef.id
-      };
-    })
-  );
-
+  const playlistModel = new PlaylistModel();
+  const playlists = await playlistModel.getAllPlaylists();
   res.status(200).json(playlists);
 });
 
