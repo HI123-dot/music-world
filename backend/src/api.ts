@@ -10,6 +10,8 @@ import {
   tagsCollection
 } from "./firebase";
 import PlaylistModel from "./db/PlaylistModel";
+import SongModel from "./db/SongModel";
+import { stringify } from "uuid";
 
 // Constants and configurations
 const app = express();
@@ -102,26 +104,12 @@ app.post("/addPlaylist", async (req, res) => {
 
 app.post("/addSong", async (req, res) => {
   const link = req.body.link;
-  const playlistId = req.body.playlistId;
-
-  // Add song to database
-  const dbSong = {
+  const songModel = new SongModel();
+  songModel.createSong({
     link: link,
-    tagIds: []
-  };
-  const songRef = songsCollection.doc();
-  await songRef.set(dbSong);
-
-  // Add song ID to playlist
-  const playlistRef = playlistsCollection.doc(playlistId);
-  const playlistDoc = await playlistRef.get();
-  if (!playlistDoc.exists) {
-    return res.status(404).json({ error: "Playlist not found" });
-  }
-
-  const dbPlaylist = playlistDoc.data() as DBPlaylist;
-  dbPlaylist.songIds.push(songRef.id);
-  await playlistRef.set(dbPlaylist);
+    tags: [],
+    id: ""
+  })
 
   res.status(201).json({
     link: link,
