@@ -2,14 +2,12 @@ import { tagsCollection } from "../firebase";
 import DataModel from "./DataModel";
 
 async function deserializer(dbTag: DBTag & { id: string }): Promise<Tag> {
-    return {
-      name: dbTag.name,
-      tagColor: dbTag.tagColor,
-      id: dbTag.id
-    };
-  }
-  
-
+  return {
+    name: dbTag.name,
+    tagColor: dbTag.tagColor,
+    id: dbTag.id
+  };
+}
 
 async function serializer(tag: Tag): Promise<DBTag> {
   return {
@@ -43,3 +41,5 @@ export default class TagModel extends DataModel<Tag, DBTag> {
     return this.delete(id);
   }
 }
+
+export const tagModel = new TagModel();

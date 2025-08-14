@@ -26,9 +26,16 @@ export default abstract class DataModel<T, U> {
 
   // Read
   protected async read(id: string): Promise<T | null> {
+    const dbData = await this.dbRead(id);
+    if (!dbData) return null;
+    return this.deserializer(dbData);
+  }
+
+  // DB Read (doesn't deserialize)
+  protected async dbRead(id: string): Promise<(U & { id: string }) | null> {
     const docRef = await this.collection.doc(id).get();
     if (!docRef.exists) return null;
-    return this.deserializer({ ...(docRef.data() as U), id: docRef.id });
+    return { ...(docRef.data() as U), id: docRef.id };
   }
 
   // Read all
@@ -44,9 +51,13 @@ export default abstract class DataModel<T, U> {
   // Update
   protected async update(id: string, data: T): Promise<T> {
     const serializedData = await this.serializer(data);
-    await this.collection
-      .doc(id)
-      .update(serializedData as firestore.UpdateData);
+    await this.dbUpdate(id, serializedData);
+    return data;
+  }
+
+  // DB Update (doesn't serialize)
+  protected async dbUpdate(id: string, data: U): Promise<U> {
+    await this.collection.doc(id).update(data as firestore.UpdateData);
     return data;
   }
 

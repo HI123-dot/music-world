@@ -9,9 +9,8 @@ import {
   playlistsCollection,
   tagsCollection
 } from "./firebase";
-import PlaylistModel from "./db/PlaylistModel";
-import SongModel from "./db/SongModel";
-import { stringify } from "uuid";
+import { playlistModel } from "./db/PlaylistModel";
+import { songModel } from "./db/SongModel";
 
 // Constants and configurations
 const app = express();
@@ -59,7 +58,6 @@ app.get("/getSongs", async ({}, res) => {
 });
 
 app.get("/getPlaylists", async ({}, res) => {
-  const playlistModel = new PlaylistModel();
   const playlists = await playlistModel.getAllPlaylists();
   res.status(200).json(playlists);
 });
@@ -92,7 +90,6 @@ app.get("/getTags", async ({}, res) => {
 
 app.post("/addPlaylist", async (req, res) => {
   const name = req.body.name;
-  const playlistModel = new PlaylistModel();
   const playlist = await playlistModel.createPlaylist({
     name: name,
     songs: [],
@@ -103,19 +100,13 @@ app.post("/addPlaylist", async (req, res) => {
 });
 
 app.post("/addSong", async (req, res) => {
-  const link = req.body.link;
-  const songModel = new SongModel();
-  songModel.createSong({
-    link: link,
+  const song = await songModel.createSong(req.body.playlistId, {
+    link: req.body.link,
     tags: [],
     id: ""
-  })
-
-  res.status(201).json({
-    link: link,
-    tags: [],
-    id: songRef.id
   });
+
+  res.status(201).json(song);
 });
 
 app.post("/tagSong", async (req, res) => {

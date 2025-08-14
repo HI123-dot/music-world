@@ -62,6 +62,26 @@ export default class PlaylistModel extends DataModel<Playlist, DBPlaylist> {
     return this.create(playlist);
   }
 
+  async addSongToPlaylist(playlistId: string, songId: string): Promise<void> {
+    const dbPlaylist = await this.dbRead(playlistId);
+    if (!dbPlaylist) throw new Error("Playlist not found");
+    dbPlaylist.songIds.push(songId);
+    await this.dbUpdate(playlistId, dbPlaylist);
+  }
+
+  async deleteSongFromPlaylist(
+    playlistId: string,
+    songId: string
+  ): Promise<void> {
+    const dbPlaylist = await this.dbRead(playlistId);
+    if (!dbPlaylist) throw new Error("Playlist not found");
+
+    await this.dbUpdate(playlistId, {
+      ...dbPlaylist,
+      songIds: dbPlaylist.songIds.filter((id) => id !== songId)
+    });
+  }
+
   async updatePlaylist(id: string, playlist: Playlist): Promise<Playlist> {
     return this.update(id, playlist);
   }
@@ -70,3 +90,5 @@ export default class PlaylistModel extends DataModel<Playlist, DBPlaylist> {
     return this.delete(id);
   }
 }
+
+export const playlistModel = new PlaylistModel();
