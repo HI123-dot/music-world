@@ -21,6 +21,12 @@ type Playlist = {
 };
 
 type Tag = {
+  id: string
+  name: string;
+  tagColor: string;
+};
+
+type DBTag = {
   name: string;
   tagColor: string;
 };
