@@ -1,39 +1,29 @@
 import { songsCollection, tagsCollection } from "../firebase";
 import DataModel from "./DataModel";
 
-
 async function deserializer(dbSong: DBSong & { id: string }): Promise<Song> {
-    // Type guard to narrow out null values
-    function isTag(tag: Tag | null): tag is Tag {
-      return tag !== null;
-    }
-  
-    // Fetch tags by their ids, resolve to Tag[] with id included
-    const tags = await Promise.all(
+  const tags = (
+    await Promise.all(
       dbSong.tagIds.map(async (tagId) => {
         const tagDoc = await tagsCollection.doc(tagId).get();
-        if (!tagDoc.exists) return null; // return null if tag missing
-        const tagData = tagDoc.data() as Omit<Tag, 'id'>;
-        return { id: tagId, ...tagData };
+        if (!tagDoc.exists) return null;
+        const tagData = tagDoc.data() as DBTag;
+        return { id: tagId, ...tagData } as Tag;
       })
-    );
-  
-    // Filter out nulls to get a Tag[]
-    const filteredTags = tags.filter(isTag);
-  
-    // Return object compliant with Song type
-    return {
-      id: dbSong.id,
-      link: dbSong.link,
-      tags: filteredTags,
-    };
-  }
-  
+    )
+  ).filter((tag) => tag !== null);
+
+  return {
+    id: dbSong.id,
+    link: dbSong.link,
+    tags: tags
+  };
+}
 
 async function serializer(song: Song): Promise<DBSong> {
   return {
     link: song.link,
-    tagIds: song.tags.map(tag => tag.id),
+    tagIds: song.tags.map((tag) => tag.id)
   };
 }
 

@@ -26,9 +26,9 @@ export default abstract class DataModel<T, U> {
 
   // Read
   protected async read(id: string): Promise<T | null> {
-    const doc = await this.collection.doc(id).get();
-    if (!doc.exists) return null;
-    return this.deserializer({ ...(doc.data() as U), id: doc.id });
+    const docRef = await this.collection.doc(id).get();
+    if (!docRef.exists) return null;
+    return this.deserializer({ ...(docRef.data() as U), id: docRef.id });
   }
 
   // Read all

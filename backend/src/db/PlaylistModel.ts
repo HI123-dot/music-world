@@ -19,7 +19,7 @@ async function deserializer(
         songData.tagIds.map(async (tagId) => {
           const tagDoc = await tagsCollection.doc(tagId).get();
           if (!tagDoc.exists) return null;
-          const tagData = tagDoc.data() as Tag;
+          const tagData = tagDoc.data() as DBTag;
           return { id: tagId, ...tagData };
         })
       );
