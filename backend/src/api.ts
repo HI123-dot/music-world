@@ -11,6 +11,7 @@ import {
 } from "./firebase";
 import { playlistModel } from "./db/PlaylistModel";
 import { songModel } from "./db/SongModel";
+import { tagModel } from "./db/TagModel";
 
 // Constants and configurations
 const app = express();
@@ -51,9 +52,7 @@ app.use(
 );
 
 app.get("/getSongs", async ({}, res) => {
-  const songRefs = await songsCollection.get();
-  const songs = songRefs.docs.map((songRef) => songRef.data());
-
+  const songs = await songModel.getAllSongs();
   res.status(200).json(songs);
 });
 
@@ -65,26 +64,18 @@ app.get("/getPlaylists", async ({}, res) => {
 app.post("/addTag", async (req, res) => {
   const name = req.body.name as string;
   const tagColor = req.body.tagColor as string;
-  const tagRef = tagsCollection.doc();
-  await tagRef.set({
-    name: name,
-    tagColor: tagColor
-  });
 
-  res.status(201).json({
+  const tag = await tagModel.createTag({
     name: name,
     tagColor: tagColor,
-    id: tagRef.id
+    id: ""
   });
+
+  res.status(201).json(tag);
 });
 
 app.get("/getTags", async ({}, res) => {
-  const tagRefs = await tagsCollection.get();
-  const tags = tagRefs.docs.map((tagRef) => ({
-    ...tagRef.data(),
-    id: tagRef.id
-  }));
-
+  const tags = await tagModel.getAllTags();
   res.status(200).json(tags);
 });
 
