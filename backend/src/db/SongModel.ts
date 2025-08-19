@@ -17,7 +17,7 @@ async function deserializer(dbSong: DBSong & { id: string }): Promise<Song> {
   return {
     id: dbSong.id,
     link: dbSong.link,
-    tags: tags
+    tags: tags as Tag[]
   };
 }
 
