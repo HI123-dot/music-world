@@ -115,44 +115,20 @@ app.post("/tagSong", async (req, res) => {
 
 app.delete("/deleteTag/:songId/:tagId", async (req, res) => {
   const { songId, tagId } = req.params;
-  const songRef = songsCollection.doc(songId);
-  const songDoc = await songRef.get();
-  const songData = songDoc.data() as DBSong;
-  const currentTagIds = songData.tagIds;
-  const updatedTagIds = currentTagIds.filter((id) => id !== tagId);
-  await songRef.update({ tagIds: updatedTagIds });
+  await songModel.removeTagFromSong(songId, tagId);
   res.status(204).json({});
 });
 
-app.delete("/deleteSong/:id", async (req, res) => {
-  const id = req.params.id;
-
-  const songRef = songsCollection.doc(id);
-  await songRef.delete();
-
-  // Remove song ID from all playlists
-  const playlistRef = await playlistsCollection.get();
-  playlistRef.docs.forEach(async (playlistDoc) => {
-    const dbPlaylist = playlistDoc.data() as DBPlaylist;
-    if (dbPlaylist.songIds.includes(id)) {
-      dbPlaylist.songIds = dbPlaylist.songIds.filter((songId) => songId !== id);
-      await playlistsCollection.doc(playlistDoc.id).set(dbPlaylist);
-    }
-  });
-
+app.delete("/deleteSong/:playlistId/:songId", async (req, res) => {
+  const playlistId = req.params.playlistId;
+  const songId = req.params.songId;
+  await songModel.deleteSong(playlistId, songId);
   res.status(204).json({});
 });
 
 app.delete("/deletePlaylist/:id", async (req, res) => {
   const id = req.params.id;
-
-  const playlistRef = playlistsCollection.doc(id);
-  const playlist = (await playlistRef.get()).data();
-  playlist?.songIds.forEach(async (songId) => {
-    await songsCollection.doc(songId).delete();
-  });
-  await playlistRef.delete();
-
+  await playlistModel.deletePlaylist(id);
   res.status(204).json({});
 });
 

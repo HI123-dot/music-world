@@ -43,7 +43,7 @@ const Playlist: React.FC = () => {
   };
 
   const handleDeleteSong = async (playlistId: string, songId: string) => {
-    await API.deleteSong(songId);
+    await API.deleteSong(playlistId, songId);
     setPlaylists((prev) =>
       prev.map((p) =>
         p.id === playlistId

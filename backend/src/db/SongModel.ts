@@ -59,9 +59,17 @@ export default class SongModel extends DataModel<Song, DBSong> {
     await this.dbUpdate(songId, { ...dbSong, tagIds: updatedTagIds });
   }
 
+  async removeTagFromSong(songId: string, tagId: string): Promise<void> {
+    const dbSong = await this.dbRead(songId);
+    if (!dbSong) throw new Error("Song not found");
+
+    const updatedTagIds = dbSong.tagIds.filter((id) => id !== tagId);
+    await this.dbUpdate(songId, { ...dbSong, tagIds: updatedTagIds });
+  }
+
   async deleteSong(playlistId: string, songId: string): Promise<void> {
-    await this.delete(songId);
     await playlistModel.deleteSongFromPlaylist(playlistId, songId);
+    await this.delete(songId);
   }
 }
 

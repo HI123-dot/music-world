@@ -56,8 +56,8 @@ export default class API {
     );
   }
 
-  static async deleteSong(songId: string): Promise<void> {
-    APIWrapper.delete(`${backendURL}/deleteSong/${songId}`);
+  static async deleteSong(playlistId: string, songId: string): Promise<void> {
+    APIWrapper.delete(`${backendURL}/deleteSong/${playlistId}/${songId}`);
   }
 
   static async deletePlaylist(playlistId: string): Promise<void> {

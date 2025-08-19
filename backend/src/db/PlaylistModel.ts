@@ -4,6 +4,7 @@ import {
   playlistsCollection
 } from "../firebase";
 import DataModel from "./DataModel";
+import { songModel } from "./SongModel";
 
 async function deserializer(
   dbPlaylist: DBPlaylist & { id: string }
@@ -87,7 +88,11 @@ export default class PlaylistModel extends DataModel<Playlist, DBPlaylist> {
   }
 
   async deletePlaylist(id: string): Promise<void> {
-    return this.delete(id);
+    const dbPlaylist = await this.dbRead(id);
+    dbPlaylist?.songIds.forEach(async (songId) => {
+      await songModel.deleteSong(songId, id);
+    });
+    await this.delete(id);
   }
 }
 
