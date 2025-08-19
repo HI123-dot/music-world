@@ -33,7 +33,7 @@ async function deserializer(
 
   return {
     name: dbPlaylist.name,
-    songs: songs as Song[],
+    songs: songs.filter((song) => song !== undefined),
     id: dbPlaylist.id
   };
 }

@@ -11,8 +11,6 @@ import {
 } from "./firebase";
 import { playlistModel } from "./db/PlaylistModel";
 import { songModel } from "./db/SongModel";
-import { tagModel } from "./db/TagModel"
-
 
 // Constants and configurations
 const app = express();
@@ -64,16 +62,28 @@ app.get("/getPlaylists", async ({}, res) => {
   res.status(200).json(playlists);
 });
 
+app.post("/addTag", async (req, res) => {
+  const name = req.body.name as string;
+  const tagColor = req.body.tagColor as string;
+  const tagRef = tagsCollection.doc();
+  await tagRef.set({
+    name: name,
+    tagColor: tagColor
+  });
+
+  res.status(201).json({
+    name: name,
+    tagColor: tagColor,
+    id: tagRef.id
+  });
+});
+
 app.get("/getTags", async ({}, res) => {
   const tagRefs = await tagsCollection.get();
   const tags = tagRefs.docs.map((tagRef) => ({
     ...tagRef.data(),
     id: tagRef.id
   }));
-
-
-
-
 
   res.status(200).json(tags);
 });
@@ -98,30 +108,47 @@ app.post("/addSong", async (req, res) => {
 
   res.status(201).json(song);
 });
-app.post("/addTag", async (req, res) => {
-  const name = req.body.name as string;
-  const tagColor = req.body.tagColor as string;
-  const dbTag = req.body.dbTag as any
-  const tagRef = tagsCollection.doc();
-  await tagRef.set({
-    name: name,
-    tagColor: tagColor,
-    id: dbTag.id,
-  });
-
-  res.status(201).json({
-    name: name,
-    tagColor: tagColor,
-    id: tagRef.id
-  });
-});
 
 app.post("/tagSong", async (req, res) => {
-  const tag = await songModel.updateSong(req.body.playlistId, {
-    link: req.body.link,
-    tags: [],
-    id: ""
-    
+  const { songId, tagId } = req.body;
+
+  if (!songId || !tagId) {
+    return res
+      .status(400)
+      .json({ error: "Missing required fields: songId, tagId" });
+  }
+
+  const songRef = songsCollection.doc(songId);
+  const dbSong = (await songRef.get()).data();
+  if (!dbSong) {
+    return res.status(404).json({ error: "Song not found" });
+  }
+
+  await songRef.set({
+    ...dbSong,
+    tagIds: Array.from(new Set([...dbSong.tagIds, tagId]))
+  });
+
+  // Making the response
+  const tags = (
+    await Promise.all(
+      dbSong.tagIds.map(async (id) => {
+        const tag = (await tagsCollection.doc(id).get()).data();
+        if (!tag) return null;
+        return {
+          id,
+          name: tag.name,
+          tagColor: tag.tagColor
+        };
+      })
+    )
+  ).filter((tag) => tag !== null);
+
+  res.status(200).json({
+    id: songRef.id,
+    link: dbSong.link,
+    tags: tags
+  });
 });
 
 app.delete("/deleteTag/:songId/:tagId", async (req, res) => {
@@ -175,4 +202,4 @@ if (process.env.ENVIRONMENT !== "production") {
     console.log(`Backend listening on port: ${PORT}`);
   });
 }
- const handler = serverless(app);})
+export const handler = serverless(app);
