@@ -43,8 +43,8 @@ export default class API {
     }).then((response) => response.data);
   }
 
-  static async tagSong(songId: string, tagId: string): Promise<Song> {
-    return APIWrapper.post(`${backendURL}/tagSong`, {
+  static async tagSong(songId: string, tagId: string): Promise<void> {
+    APIWrapper.post(`${backendURL}/tagSong`, {
       songId: songId,
       tagId: tagId
     }).then((response) => response.data);

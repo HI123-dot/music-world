@@ -109,37 +109,8 @@ app.post("/tagSong", async (req, res) => {
       .json({ error: "Missing required fields: songId, tagId" });
   }
 
-  const songRef = songsCollection.doc(songId);
-  const dbSong = (await songRef.get()).data();
-  if (!dbSong) {
-    return res.status(404).json({ error: "Song not found" });
-  }
-
-  await songRef.set({
-    ...dbSong,
-    tagIds: Array.from(new Set([...dbSong.tagIds, tagId]))
-  });
-
-  // Making the response
-  const tags = (
-    await Promise.all(
-      dbSong.tagIds.map(async (id) => {
-        const tag = (await tagsCollection.doc(id).get()).data();
-        if (!tag) return null;
-        return {
-          id,
-          name: tag.name,
-          tagColor: tag.tagColor
-        };
-      })
-    )
-  ).filter((tag) => tag !== null);
-
-  res.status(200).json({
-    id: songRef.id,
-    link: dbSong.link,
-    tags: tags
-  });
+  await songModel.addTagToSong(songId, tagId);
+  res.status(200).json({});
 });
 
 app.delete("/deleteTag/:songId/:tagId", async (req, res) => {
