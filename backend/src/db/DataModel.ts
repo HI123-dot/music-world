@@ -21,7 +21,7 @@ export default abstract class DataModel<T, U> {
   protected async create(data: T): Promise<T> {
     const serializedData = await this.serializer(data);
     const docRef = await this.collection.add(serializedData);
-    return this.deserializer({ ...serializedData, id: docRef.id });
+    return { ...data, id: docRef.id };
   }
 
   // Read

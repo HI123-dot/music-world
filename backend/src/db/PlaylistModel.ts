@@ -13,7 +13,7 @@ async function deserializer(
     dbPlaylist.songIds.map(async (songId) => {
       const songRef = songsCollection.doc(songId);
       const songDoc = await songRef.get();
-      if (!songDoc.exists) return undefined;
+      if (!songDoc.exists) return null;
 
       const songData = songDoc.data() as DBSong;
       const tags = await Promise.all(
@@ -34,7 +34,7 @@ async function deserializer(
 
   return {
     name: dbPlaylist.name,
-    songs: songs.filter((song) => song !== undefined),
+    songs: songs.filter((song) => song !== null),
     id: dbPlaylist.id
   };
 }
@@ -42,7 +42,7 @@ async function deserializer(
 async function serializer(playlist: Playlist): Promise<DBPlaylist> {
   return {
     name: playlist.name,
-    songIds: await Promise.all(playlist.songs.map(async (song) => song.id))
+    songIds: playlist.songs.map((song) => song.id)
   };
 }
 

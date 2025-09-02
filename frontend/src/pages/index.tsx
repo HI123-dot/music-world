@@ -16,8 +16,8 @@ const Playlist: React.FC = () => {
   const [newTagColor, setNewTagColor] = useState("#526afe");
 
   useEffect(() => {
-    API.getPlaylists().then(setPlaylists);
-    API.getTags().then(setTags);
+    API.getPlaylists().then((playlists) => setPlaylists(playlists));
+    API.getTags().then((tags) => setTags(tags));
   }, []);
 
   const handleCreatePlaylist = async (e: FormEvent) => {
@@ -131,7 +131,6 @@ const Playlist: React.FC = () => {
   };
 
   const handleCreateTagForSong = async (
-    playlistId: string,
     songId: string,
     e: FormEvent
   ) => {
@@ -344,7 +343,7 @@ const Playlist: React.FC = () => {
                               <form
                                 className={styles.tagCreateForm}
                                 onSubmit={(e) =>
-                                  handleCreateTagForSong(pl.id, song.id, e)
+                                  handleCreateTagForSong(song.id, e)
                                 }
                               >
                                 <label

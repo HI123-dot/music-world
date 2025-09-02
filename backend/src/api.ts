@@ -4,11 +4,6 @@ import serverless from "serverless-http";
 import cors from "cors";
 import * as winston from "winston";
 import * as expressWinston from "express-winston";
-import {
-  songsCollection,
-  playlistsCollection,
-  tagsCollection
-} from "./firebase";
 import { playlistModel } from "./db/PlaylistModel";
 import { songModel } from "./db/SongModel";
 import { tagModel } from "./db/TagModel";
