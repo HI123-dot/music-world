@@ -1,4 +1,5 @@
 type Song = {
+  name: string;
   link: string;
   tags: Tag[];
   id: string;

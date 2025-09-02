@@ -15,6 +15,7 @@ async function deserializer(dbSong: DBSong & { id: string }): Promise<Song> {
   ).filter((tag) => tag !== null);
 
   return {
+    name: dbSong.name,
     id: dbSong.id,
     link: dbSong.link,
     tags: tags
@@ -23,6 +24,7 @@ async function deserializer(dbSong: DBSong & { id: string }): Promise<Song> {
 
 async function serializer(song: Song): Promise<DBSong> {
   return {
+    name: song.name,
     link: song.link,
     tagIds: song.tags.map((tag) => tag.id)
   };

@@ -87,6 +87,7 @@ app.post("/addPlaylist", async (req, res) => {
 
 app.post("/addSong", async (req, res) => {
   const song = await songModel.createSong(req.body.playlistId, {
+    name: req.body.name,
     link: req.body.link,
     tags: [],
     id: ""

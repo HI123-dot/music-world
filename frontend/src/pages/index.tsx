@@ -6,6 +6,7 @@ const Playlist: React.FC = () => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [nameInputs, setNameInputs] = useState<Record<string, string>>({});
   const [linkInputs, setLinkInputs] = useState<Record<string, string>>({});
   const [tags, setTags] = useState<Tag[]>([]);
   const [expandedTagPanel, setExpandedTagPanel] = useState<string | null>(null);
@@ -31,14 +32,16 @@ const Playlist: React.FC = () => {
 
   const handleAddMusic = async (e: FormEvent, playlistId: string) => {
     e.preventDefault();
+    const name = nameInputs[playlistId]?.trim() || "Untitled";
     const link = linkInputs[playlistId]?.trim();
     if (!link) return;
-    const newSong = await API.addSong(link, playlistId);
+    const newSong = await API.addSong(name, link, playlistId);
     setPlaylists((prev) =>
       prev.map((p) =>
         p.id === playlistId ? { ...p, songs: [...p.songs, newSong] } : p
       )
     );
+    setNameInputs((inputs) => ({ ...inputs, [playlistId]: "" }));
     setLinkInputs((inputs) => ({ ...inputs, [playlistId]: "" }));
   };
 
@@ -213,6 +216,18 @@ const Playlist: React.FC = () => {
                 className={styles.formaddmusic}
               >
                 <input
+                  placeholder="Enter song name"
+                  value={nameInputs[pl.id] || ""}
+                  onChange={(e) =>
+                    setNameInputs((inputs) => ({
+                      ...inputs,
+                      [pl.id]: e.target.value
+                    }))
+                  }
+                  required
+                  className={styles.inputlink}
+                />
+                <input
                   type="url"
                   placeholder="Paste music link"
                   value={linkInputs[pl.id] || ""}
@@ -241,7 +256,7 @@ const Playlist: React.FC = () => {
                         rel="noopener noreferrer"
                         className={styles.playlistlink}
                       >
-                        {song.link}
+                        {song.name}
                       </a>
                       {/* Tags on song - click a tag to remove */}
                       <div className={styles.songTags}>

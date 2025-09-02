@@ -25,6 +25,7 @@ async function deserializer(
         })
       );
       return {
+        name: songData.name,
         link: songData.link,
         tags: tags.filter((tag) => tag !== null),
         id: songId

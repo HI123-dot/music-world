@@ -23,8 +23,13 @@ export default class API {
     );
   }
 
-  static async addSong(link: string, playlistId: string): Promise<Song> {
+  static async addSong(
+    name: string,
+    link: string,
+    playlistId: string
+  ): Promise<Song> {
     return APIWrapper.post(`${backendURL}/addSong`, {
+      name: name,
       link: link,
       playlistId: playlistId
     }).then((response) => response.data);
