@@ -210,6 +210,7 @@ const Playlist: React.FC = () => {
         className={styles.playlistSelector}
         style={{ display: "flex", gap: "2rem" }}
       >
+        {/* Left playlist panel */}
         <div
           style={{
             width: "22%",
@@ -347,7 +348,14 @@ const Playlist: React.FC = () => {
           </ul>
         </div>
 
-        <div style={{ flexGrow: 1 }}>
+        {/* Right panel with horizontal scroll */}
+        <div
+          style={{
+            flexGrow: 1,
+            overflowX: "auto",
+            paddingBottom: "1rem",
+          }}
+        >
           {(selectedPlaylistId
             ? playlists.filter((p) => p.id === selectedPlaylistId)
             : playlists
@@ -361,6 +369,8 @@ const Playlist: React.FC = () => {
                 borderRadius: 8,
                 boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
                 fontFamily: "monospace",
+                minWidth: 0,
+                maxWidth: 960,
               }}
             >
               <h3
@@ -458,32 +468,42 @@ const Playlist: React.FC = () => {
                         padding: "1rem",
                         borderRadius: 8,
                         boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-                        width: "300px",
+                        minWidth: 0,
                         display: "flex",
                         alignItems: "center",
                         gap: "1rem",
                         cursor: "default",
                         fontFamily: "monospace",
+                        maxWidth: "100%",
                       }}
                     >
-                      <a
-                        href={song.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      {/* Song title container grows to max available */}
+                      <div
                         style={{
-                          fontWeight: 600,
-                          color: "#16a085",
-                          textDecoration: "none",
-                          flexGrow: 1,
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
+                          flexGrow: 1,
+                          minWidth: 0,
                         }}
-                        title={song.name}
                       >
-                        {song.name}
-                      </a>
+                        <a
+                          href={song.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontWeight: 600,
+                            color: "#16a085",
+                            textDecoration: "none",
+                            userSelect: "text",
+                          }}
+                          title={song.name}
+                        >
+                          {song.name}
+                        </a>
+                      </div>
 
+                      {/* Edit button */}
                       <button
                         aria-label="Edit song"
                         title="Edit song"
@@ -506,15 +526,17 @@ const Playlist: React.FC = () => {
                         <PenIcon size={18} color="#16a085" />
                       </button>
 
+                      {/* Tags container horizontally scrollable */}
                       <div
                         style={{
                           display: "flex",
-                          flexDirection: "column",
-                          gap: 6,
-                          minWidth: 80,
+                          gap: 8,
                           flexShrink: 0,
-                          alignItems: "flex-start",
+                          overflowX: "auto",
+                          maxWidth: "45%",
                           userSelect: "none",
+                          paddingBottom: 2,
+                          scrollbarWidth: "thin",
                         }}
                       >
                         {song.tags.length > 0 ? (
@@ -526,20 +548,25 @@ const Playlist: React.FC = () => {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 6,
-                                fontWeight: 600,
-                                color: "#222",
-                                fontSize: 14,
-                                cursor: "default",
+                                backgroundColor: tag.tagColor,
+                                color: "#fff",
+                                borderRadius: 15,
+                                padding: "0.15rem 0.6rem",
                                 whiteSpace: "nowrap",
+                                fontWeight: 600,
+                                fontSize: "0.85rem",
+                                flexShrink: 0,
+                                cursor: "default",
+                                userSelect: "none",
                               }}
                             >
                               <span
                                 style={{
-                                  backgroundColor: tag.tagColor,
-                                  width: 16,
-                                  height: 16,
+                                  width: 12,
+                                  height: 12,
                                   borderRadius: "50%",
-                                  display: "inline-block",
+                                  border: "1px solid #fff",
+                                  flexShrink: 0,
                                 }}
                               />
                               {tag.name}
@@ -548,7 +575,7 @@ const Playlist: React.FC = () => {
                         ) : (
                           <span
                             style={{
-                              fontSize: "0.8rem",
+                              fontSize: "0.85rem",
                               color: "#7f8c8d",
                               fontStyle: "italic",
                               whiteSpace: "nowrap",
@@ -559,6 +586,7 @@ const Playlist: React.FC = () => {
                         )}
                       </div>
 
+                      {/* Popup container */}
                       {popupSongId === song.id && (
                         <div
                           style={{
@@ -574,6 +602,7 @@ const Playlist: React.FC = () => {
                             fontFamily: "monospace",
                             userSelect: "none",
                           }}
+                          onMouseLeave={() => setPopupSongId(null)}
                         >
                           <button
                             onClick={() => handleDeleteSong(pl.id, song.id)}
