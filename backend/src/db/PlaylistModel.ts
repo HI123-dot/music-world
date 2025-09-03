@@ -76,7 +76,7 @@ export default class PlaylistModel extends DataModel<Playlist, DBPlaylist> {
     songId: string
   ): Promise<void> {
     const dbPlaylist = await this.dbRead(playlistId);
-    if (!dbPlaylist) throw new Error("Playlist not found");
+    if (!dbPlaylist) return;
 
     await this.dbUpdate(playlistId, {
       ...dbPlaylist,
@@ -90,9 +90,12 @@ export default class PlaylistModel extends DataModel<Playlist, DBPlaylist> {
 
   async deletePlaylist(id: string): Promise<void> {
     const dbPlaylist = await this.dbRead(id);
-    dbPlaylist?.songIds.forEach(async (songId) => {
-      await songModel.deleteSong(songId, id);
-    });
+    if (!dbPlaylist) throw new Error("Playlist not found");
+    await Promise.all(
+      dbPlaylist.songIds.map(async (songId) => {
+        await songModel.deleteSong(songId, id);
+      })
+    );
     await this.delete(id);
   }
 }
