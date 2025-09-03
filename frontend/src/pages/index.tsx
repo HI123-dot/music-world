@@ -1,11 +1,15 @@
-import React, { useState, FormEvent, useEffect } from "react";
+import React, { useState, FormEvent, useEffect, useRef } from "react";
 import styles from "../styles/Playlist.module.css";
 import API from "../api/API";
 
 const Playlist: React.FC = () => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(
+    null
+  );
+  const [hoveredSongId, setHoveredSongId] = useState<string | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [isTypingPlaylistName, setIsTypingPlaylistName] = useState(false);
   const [nameInputs, setNameInputs] = useState<Record<string, string>>({});
   const [linkInputs, setLinkInputs] = useState<Record<string, string>>({});
   const [tags, setTags] = useState<Tag[]>([]);
@@ -14,20 +18,46 @@ const Playlist: React.FC = () => {
     null
   );
   const [newTagName, setNewTagName] = useState("");
-  const [newTagColor, setNewTagColor] = useState("#526afe");
+  const [newTagColor, setNewTagColor] = useState("#2ecc71");
+
+  const playlistNameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    API.getPlaylists().then((playlists) => setPlaylists(playlists));
-    API.getTags().then((tags) => setTags(tags));
+    API.getPlaylists().then(setPlaylists);
+    API.getTags().then(setTags);
   }, []);
 
-  const handleCreatePlaylist = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!newPlaylistName.trim()) return;
-    const created = await API.addPlaylist(newPlaylistName.trim());
+  // Focus input when typing new playlist
+  useEffect(() => {
+    if (isTypingPlaylistName && playlistNameInputRef.current) {
+      playlistNameInputRef.current.focus();
+    }
+  }, [isTypingPlaylistName]);
+
+  const submitNewPlaylist = async () => {
+    const trimmed = newPlaylistName.trim();
+    if (!trimmed) {
+      setIsTypingPlaylistName(false);
+      setNewPlaylistName("");
+      return;
+    }
+    const created = await API.addPlaylist(trimmed);
     setPlaylists((prev) => [...prev, created]);
-    setShowCreate(false);
     setNewPlaylistName("");
+    setIsTypingPlaylistName(false);
+    setSelectedPlaylistId(created.id);
+  };
+
+  const handleNewPlaylistNameKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      submitNewPlaylist();
+    } else if (e.key === "Escape") {
+      setIsTypingPlaylistName(false);
+      setNewPlaylistName("");
+    }
   };
 
   const handleAddMusic = async (e: FormEvent, playlistId: string) => {
@@ -56,17 +86,18 @@ const Playlist: React.FC = () => {
     );
     if (expandedTagPanel === songId) setExpandedTagPanel(null);
     if (creatingTagForSong === songId) setCreatingTagForSong(null);
+    setHoveredSongId(null);
   };
 
   const handleDeletePlaylist = async (playlistId: string) => {
     await API.deletePlaylist(playlistId);
     setPlaylists((prev) => prev.filter((p) => p.id !== playlistId));
+    if (selectedPlaylistId === playlistId) setSelectedPlaylistId(null);
   };
 
   const songHasTag = (song: Song, tag: Tag) =>
     song.tags.some((t) => t.id === tag.id);
 
-  // Add tag to song with optimistic UI update and rollback on failure
   const handleTagSong = async (
     playlistId: string,
     songId: string,
@@ -74,9 +105,7 @@ const Playlist: React.FC = () => {
   ) => {
     const tagToAdd = tags.find((t) => t.id === tagId);
     if (!tagToAdd) return;
-
     const prevPlaylists = [...playlists];
-
     setPlaylists((pls) =>
       pls.map((p) =>
         p.id === playlistId
@@ -86,12 +115,11 @@ const Playlist: React.FC = () => {
                 if (s.id !== songId) return s;
                 if (s.tags.some((t) => t.id === tagId)) return s;
                 return { ...s, tags: [...s.tags, tagToAdd] };
-              })
+              }),
             }
           : p
       )
     );
-
     try {
       await API.tagSong(songId, tagId);
     } catch (error) {
@@ -100,14 +128,12 @@ const Playlist: React.FC = () => {
     }
   };
 
-  // Delete tag from song with optimistic UI update and rollback on failure
   const handleDeleteTag = async (
     playlistId: string,
     songId: string,
     tagId: string
   ) => {
     const prevPlaylists = [...playlists];
-
     setPlaylists((pls) =>
       pls.map((p) =>
         p.id === playlistId
@@ -117,14 +143,13 @@ const Playlist: React.FC = () => {
                 if (s.id !== songId) return s;
                 return {
                   ...s,
-                  tags: s.tags.filter((t) => t.id !== tagId)
+                  tags: s.tags.filter((t) => t.id !== tagId),
                 };
-              })
+              }),
             }
           : p
       )
     );
-
     try {
       await API.deleteTag(songId, tagId);
     } catch (error) {
@@ -133,12 +158,8 @@ const Playlist: React.FC = () => {
     }
   };
 
-  const handleCreateTagForSong = async (
-    songId: string,
-    e: FormEvent
-  ) => {
+  const handleCreateTagForSong = async (songId: string, e: FormEvent) => {
     e.preventDefault();
-
     try {
       const newTag = await API.addTag(newTagColor, newTagName);
       setTags((prev) => [...prev, newTag]);
@@ -148,182 +169,421 @@ const Playlist: React.FC = () => {
     } catch (error) {
       console.error("Failed to create and tag new tag:", error);
     }
-
     setNewTagName("");
-    setNewTagColor("#526afe");
+    setNewTagColor("#2ecc71");
     setCreatingTagForSong(null);
     setExpandedTagPanel(songId);
   };
 
-  return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Music Sharing Program</h1>
-      {!showCreate ? (
-        <button onClick={() => setShowCreate(true)}>Create Playlist</button>
-      ) : (
-        <form onSubmit={handleCreatePlaylist} className={styles.formaddmusic}>
-          <input
-            type="text"
-            placeholder="Playlist name"
-            value={newPlaylistName}
-            onChange={(e) => setNewPlaylistName(e.target.value)}
-            required
-            className={styles.inputlink}
-          />
-          <button type="submit" className={styles.btnadd}>
-            Add Playlist
-          </button>
-        </form>
-      )}
+  // On clicking Playlists heading: clear selection to show all expanded
+  const handlePlaylistsHeadingClick = () => {
+    setSelectedPlaylistId(null);
+    setExpandedTagPanel(null);
+    setCreatingTagForSong(null);
+    setHoveredSongId(null);
+  };
 
-      <div className={styles.playlistSelector}>
-        <h2>Your Playlists</h2>
-        {playlists.length === 0 && <div>No playlists yet.</div>}
-        <ul className={styles.playlistlist}>
-          {playlists.map((pl) => (
-            <li key={pl.id} className={styles.playlistbox}>
-              <div className={styles.playlistTitleRow}>
-                <div className={styles.playlisttitle}>{pl.name}</div>
+  return (
+    <div
+      style={{
+        fontFamily: "monospace, monospace",
+        backgroundColor: "#f9fafb",
+        color: "#222",
+        padding: "1rem",
+      }}
+    >
+      <h1
+        className={styles.title}
+        style={{ color: "#16a085", fontWeight: 700, marginBottom: "1rem" }}
+      >
+        Music Sharing Program
+      </h1>
+
+      <div
+        className={styles.playlistSelector}
+        style={{ display: "flex", gap: "2rem" }}
+      >
+        {/* Left playlist panel */}
+        <div
+          style={{
+            width: "22%",
+            backgroundColor: "#dff0ea",
+            borderRadius: 8,
+            padding: "1rem",
+            boxShadow: "0 2px 6px rgba(22, 160, 133, 0.2)",
+            userSelect: "none",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "1rem",
+              fontWeight: 700,
+              color: "#16a085",
+              fontSize: "1.25rem",
+              cursor: "pointer",
+            }}
+            onClick={handlePlaylistsHeadingClick}
+            title="Show all playlists"
+          >
+            {!isTypingPlaylistName && (
+              <>
                 <button
-                  className={styles.playlistDeleteBtn}
-                  onClick={() => handleDeletePlaylist(pl.id)}
+                  aria-label="Create new playlist"
+                  title="Create new playlist"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsTypingPlaylistName(true);
+                  }}
+                  style={{
+                    backgroundColor: "#16a085",
+                    border: "none",
+                    color: "white",
+                    fontWeight: 700,
+                    fontSize: "1.25rem",
+                    padding: "0 0.5rem",
+                    cursor: "pointer",
+                    borderRadius: 4,
+                    lineHeight: 1,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  +
+                </button>
+                <span>Playlists</span>
+              </>
+            )}
+            {isTypingPlaylistName && (
+              <input
+                ref={playlistNameInputRef}
+                type="text"
+                placeholder="New playlist name"
+                value={newPlaylistName}
+                onChange={(e) => setNewPlaylistName(e.target.value)}
+                onKeyDown={handleNewPlaylistNameKeyDown}
+                onBlur={() => {
+                  setIsTypingPlaylistName(false);
+                  setNewPlaylistName("");
+                }}
+                style={{
+                  flexGrow: 1,
+                  borderRadius: 5,
+                  border: "1px solid #16a085",
+                  padding: "0.3rem 0.5rem",
+                  fontFamily: "monospace",
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  outline: "none",
+                }}
+              />
+            )}
+          </div>
+          {playlists.length === 0 && (
+            <div style={{ color: "#7f8c8d", fontFamily: "monospace" }}>
+              No playlists yet.
+            </div>
+          )}
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              margin: 0,
+              fontFamily: "monospace",
+              cursor: "pointer",
+            }}
+          >
+            {playlists.map((pl) => (
+              <li
+                key={pl.id}
+                onClick={() => setSelectedPlaylistId(pl.id)}
+                style={{
+                  backgroundColor:
+                    selectedPlaylistId === pl.id ? "#a2d9ce" : "#cde5df",
+                  padding: "0.75rem 1rem",
+                  marginBottom: "0.5rem",
+                  borderRadius: 6,
+                  boxShadow:
+                    selectedPlaylistId === pl.id
+                      ? "1px 2px 5px rgba(22, 160, 133, 0.6)"
+                      : "1px 2px 5px rgba(22, 160, 133, 0.3)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontWeight: 600,
+                  color: "#004d40",
+                }}
+              >
+                <span>{pl.name}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePlaylist(pl.id);
+                  }}
                   aria-label="Delete playlist"
                   title="Delete playlist"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#e74c3c",
+                    fontSize: "1.25rem",
+                    cursor: "pointer",
+                    lineHeight: 1,
+                  }}
                 >
-                  {/* Trash icon SVG */}
-                  <svg height="20" width="20" viewBox="0 0 20 20" fill="none">
-                    <path
-                      d="M6 7V15C6 15.55 6.45 16 7 16H13C13.55 16 14 15.55 14 15V7M3 7H17M8 7V15M12 7V15M4 7V17C4 17.55 4.45 18 5 18H15C15.55 18 16 17.55 16 17V7"
-                      stroke="#f06c7a"
-                      strokeWidth="1.3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <rect
-                      x="8"
-                      y="2"
-                      width="4"
-                      height="2"
-                      rx="1"
-                      stroke="#f06c7a"
-                      strokeWidth="1.3"
-                    />
-                  </svg>
+                  &times;
                 </button>
-              </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Right 'Manage Songs' panel */}
+        <div style={{ flexGrow: 1 }}>
+          {(selectedPlaylistId
+            ? playlists.filter((p) => p.id === selectedPlaylistId)
+            : playlists
+          ).map((pl) => (
+            <div
+              key={pl.id}
+              style={{
+                marginBottom: "2rem",
+                backgroundColor: "#f0f3f4",
+                padding: "1rem",
+                borderRadius: 8,
+                boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                fontFamily: "monospace",
+              }}
+            >
+              <h3
+                style={{
+                  marginBottom: "0.75rem",
+                  color: "#34495e",
+                  fontWeight: 700,
+                }}
+              >
+                {pl.name}
+              </h3>
               <form
                 onSubmit={(e) => handleAddMusic(e, pl.id)}
-                className={styles.formaddmusic}
+                style={{
+                  display: "flex",
+                  gap: "0.75rem",
+                  marginBottom: "1rem",
+                }}
               >
                 <input
-                  placeholder="Enter song name"
+                  placeholder="Song Title"
                   value={nameInputs[pl.id] || ""}
                   onChange={(e) =>
                     setNameInputs((inputs) => ({
                       ...inputs,
-                      [pl.id]: e.target.value
+                      [pl.id]: e.target.value,
                     }))
                   }
                   required
                   className={styles.inputlink}
+                  style={{
+                    flex: 2,
+                    borderRadius: 5,
+                    border: "1px solid #16a085",
+                    padding: "0.4rem 0.75rem",
+                    fontFamily: "monospace",
+                  }}
                 />
                 <input
                   type="url"
-                  placeholder="Paste music link"
+                  placeholder="Music Link"
                   value={linkInputs[pl.id] || ""}
                   onChange={(e) =>
                     setLinkInputs((inputs) => ({
                       ...inputs,
-                      [pl.id]: e.target.value
+                      [pl.id]: e.target.value,
                     }))
                   }
                   required
                   className={styles.inputlink}
+                  style={{
+                    flex: 3,
+                    borderRadius: 5,
+                    border: "1px solid #16a085",
+                    padding: "0.4rem 0.75rem",
+                    fontFamily: "monospace",
+                  }}
                 />
-                <button type="submit" className={styles.btnadd}>
-                  Add
+                <button
+                  type="submit"
+                  className={styles.btnadd}
+                  style={{
+                    backgroundColor: "#16a085",
+                    color: "white",
+                    borderRadius: 5,
+                    border: "none",
+                    padding: "0.5rem 1rem",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontFamily: "monospace",
+                  }}
+                >
+                  Add Song
                 </button>
               </form>
-              <ul className={styles.playlistlist}>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "1rem",
+                  fontFamily: "monospace",
+                }}
+              >
                 {pl.songs.length === 0 ? (
-                  <li className={styles.emptytext}>No music added yet.</li>
+                  <li style={{ color: "#7f8c8d", fontStyle: "italic" }}>
+                    No music added yet.
+                  </li>
                 ) : (
                   pl.songs.map((song) => (
-                    <li key={song.id} className={styles.playlistitem}>
+                    <li
+                      key={song.id}
+                      style={{
+                        position: "relative",
+                        backgroundColor: "white",
+                        padding: "1rem",
+                        borderRadius: 8,
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+                        width: "300px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                        cursor: "default",
+                        fontFamily: "monospace",
+                      }}
+                      onMouseEnter={() => setHoveredSongId(song.id)}
+                      onMouseLeave={() => {
+                        setHoveredSongId(null);
+                        setExpandedTagPanel(null);
+                        setCreatingTagForSong(null);
+                      }}
+                    >
                       <a
                         href={song.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={styles.playlistlink}
+                        style={{
+                          fontWeight: 600,
+                          color: "#16a085",
+                          textDecoration: "none",
+                          flexGrow: 1,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                        title={song.name}
                       >
                         {song.name}
                       </a>
-                      {/* Tags on song - click a tag to remove */}
-                      <div className={styles.songTags}>
-                        {song.tags?.map((tag) => (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                          flexShrink: 0,
+                          alignItems: "center",
+                        }}
+                      >
+                        {song.tags.length > 0 ? (
+                          song.tags.map((tag) => (
+                            <span
+                              key={tag.id}
+                              title={tag.name}
+                              style={{
+                                backgroundColor: tag.tagColor,
+                                width: 18,
+                                height: 18,
+                                borderRadius: "50%",
+                                display: "inline-block",
+                              }}
+                            />
+                          ))
+                        ) : (
                           <span
-                            key={tag.id}
-                            className={styles.tagPill}
                             style={{
-                              background: tag.tagColor,
-                              cursor: "pointer"
+                              fontSize: "0.8rem",
+                              color: "#7f8c8d",
+                              fontStyle: "italic",
                             }}
-                            title={`Click to remove tag "${tag.name}"`}
-                            onClick={() =>
-                              handleDeleteTag(pl.id, song.id, tag.id)
-                            }
                           >
-                            {tag.name}
+                            No tags
                           </span>
-                        ))}
+                        )}
                       </div>
-                      <div className={styles.songMainRow}>
-                        <button
-                          className={styles.songBtn}
-                          onClick={() => handleDeleteSong(pl.id, song.id)}
-                          aria-label="Delete song"
-                          title="Delete song"
+
+                      {hoveredSongId === song.id && (
+                        <div
+                          onMouseEnter={() => setHoveredSongId(song.id)}
+                          onMouseLeave={() => setHoveredSongId(null)}
+                          style={{
+                            position: "absolute",
+                            top: "calc(100% + 8px)",
+                            right: 0,
+                            background: "white",
+                            borderRadius: 8,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                            padding: "1rem",
+                            width: 300,
+                            zIndex: 20,
+                            fontFamily: "monospace",
+                            userSelect: "none",
+                          }}
                         >
-                          🗑️
-                        </button>
-                        <button
-                          className={styles.songBtn}
-                          onClick={() =>
-                            setExpandedTagPanel(
-                              expandedTagPanel === song.id ? null : song.id
-                            )
-                          }
-                          aria-label="Tag song"
-                          title="Tag song"
-                        >
-                          Tag
-                        </button>
-                      </div>
-                      {expandedTagPanel === song.id && (
-                        <div className={styles.tagPanel}>
-                          <div className={styles.tagPanelHeader}>
-                            <span style={{ fontWeight: 500 }}>
-                              Add tag to song
-                            </span>
-                            <button
-                              onClick={() => setExpandedTagPanel(null)}
-                              className={styles.tagPanelClose}
-                              aria-label="Close tag panel"
-                              title="Close tag panel"
-                            >
-                              ×
-                            </button>
+                          <button
+                            onClick={() => handleDeleteSong(pl.id, song.id)}
+                            style={{
+                              backgroundColor: "#e74c3c",
+                              color: "white",
+                              border: "none",
+                              borderRadius: 6,
+                              padding: "0.5rem 1rem",
+                              marginBottom: "0.75rem",
+                              cursor: "pointer",
+                              fontWeight: 700,
+                              width: "100%",
+                              fontSize: "1rem",
+                            }}
+                          >
+                            Delete Song
+                          </button>
+
+                          <div style={{ marginBottom: "0.75rem" }}>
+                            <strong>Tags:</strong>
                           </div>
-                          <div className={styles.tagMenuTags}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "0.75rem",
+                              marginBottom: "0.75rem",
+                            }}
+                          >
                             {tags.length > 0 ? (
                               tags.map((tag) => (
                                 <button
                                   key={tag.id}
-                                  className={styles.tagPill}
                                   style={{
-                                    background: tag.tagColor,
+                                    backgroundColor: tag.tagColor,
                                     opacity: songHasTag(song, tag) ? 0.6 : 1,
-                                    cursor: "pointer"
+                                    cursor: "pointer",
+                                    borderRadius: 15,
+                                    border: "none",
+                                    padding: "0.4rem 1rem",
+                                    fontWeight: 700,
+                                    color: "#fff",
+                                    fontSize: "0.9rem",
                                   }}
                                   onClick={() => {
                                     if (songHasTag(song, tag)) {
@@ -332,89 +592,111 @@ const Playlist: React.FC = () => {
                                       handleTagSong(pl.id, song.id, tag.id);
                                     }
                                   }}
+                                  title={
+                                    songHasTag(song, tag)
+                                      ? `Click to remove tag "${tag.name}"`
+                                      : `Click to add tag "${tag.name}"`
+                                  }
                                 >
                                   {tag.name}
-                                  {songHasTag(song, tag) ? " (Tagged)" : ""}
+                                  {songHasTag(song, tag) ? " ✓" : ""}
                                 </button>
                               ))
                             ) : (
                               <span
-                                style={{ fontSize: "0.95em", color: "#aaa" }}
+                                style={{
+                                  fontSize: "1rem",
+                                  color: "#aaa",
+                                }}
                               >
                                 No tags yet
                               </span>
                             )}
                           </div>
-                          <div className={styles.createTagBox}>
+                          <div>
                             {creatingTagForSong !== song.id ? (
                               <button
-                                className={styles.btnadd}
-                                style={{ marginTop: 10 }}
                                 onClick={() => setCreatingTagForSong(song.id)}
+                                style={{
+                                  backgroundColor: "#3498db",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: 6,
+                                  padding: "0.5rem 1.2rem",
+                                  cursor: "pointer",
+                                  fontWeight: 700,
+                                  fontSize: "1rem",
+                                  width: "100%",
+                                }}
                               >
                                 + Create New Tag
                               </button>
                             ) : (
                               <form
-                                className={styles.tagCreateForm}
                                 onSubmit={(e) =>
                                   handleCreateTagForSong(song.id, e)
                                 }
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "0.5rem",
+                                }}
                               >
-                                <label
-                                  className={styles.label}
-                                  htmlFor={`new-tag-name-${song.id}`}
-                                >
-                                  Tag name
-                                </label>
                                 <input
-                                  id={`new-tag-name-${song.id}`}
                                   type="text"
+                                  placeholder="Tag name"
                                   value={newTagName}
-                                  onChange={(e) =>
-                                    setNewTagName(e.target.value)
-                                  }
-                                  placeholder="ex: Happy"
+                                  onChange={(e) => setNewTagName(e.target.value)}
                                   required
-                                  className={styles.inputlink}
-                                  style={{ width: "100%" }}
+                                  style={{
+                                    borderRadius: 6,
+                                    border: "1px solid #3498db",
+                                    padding: "0.6rem",
+                                    fontSize: "1rem",
+                                    fontFamily: "monospace",
+                                  }}
+                                  autoFocus
                                 />
-                                <label
-                                  className={styles.label}
-                                  htmlFor={`new-tag-color-${song.id}`}
-                                >
-                                  Tag color
-                                </label>
                                 <input
-                                  id={`new-tag-color-${song.id}`}
                                   type="color"
                                   value={newTagColor}
-                                  onChange={(e) =>
-                                    setNewTagColor(e.target.value)
-                                  }
+                                  onChange={(e) => setNewTagColor(e.target.value)}
                                   style={{
-                                    marginBottom: "10px",
-                                    marginTop: "2px",
-                                    height: "36px",
-                                    width: "64px",
-                                    padding: 0,
+                                    height: "40px",
+                                    width: "70px",
                                     border: "none",
-                                    background: "none",
-                                    display: "block"
+                                    cursor: "pointer",
                                   }}
                                 />
                                 <button
                                   type="submit"
-                                  className={styles.btnadd}
-                                  style={{ width: "100%", marginTop: 9 }}
+                                  style={{
+                                    backgroundColor: "#3498db",
+                                    color: "white",
+                                    borderRadius: 6,
+                                    border: "none",
+                                    padding: "0.6rem",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                    fontSize: "1rem",
+                                    width: "100%",
+                                  }}
                                 >
                                   Create & Tag
                                 </button>
                                 <button
                                   type="button"
-                                  className={styles.songBtn}
-                                  style={{ marginTop: 3 }}
                                   onClick={() => setCreatingTagForSong(null)}
+                                  style={{
+                                    backgroundColor: "#e74c3c",
+                                    color: "white",
+                                    borderRadius: 6,
+                                    border: "none",
+                                    padding: "0.6rem",
+                                    cursor: "pointer",
+                                    fontSize: "1rem",
+                                    width: "100%",
+                                  }}
                                 >
                                   Cancel
                                 </button>
@@ -427,9 +709,9 @@ const Playlist: React.FC = () => {
                   ))
                 )}
               </ul>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </div>
   );
