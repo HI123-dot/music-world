@@ -2,18 +2,29 @@ import React, { useState, FormEvent, useEffect, useRef } from "react";
 import styles from "../styles/Playlist.module.css";
 import API from "../api/API";
 
+const PenIcon = ({ size = 16, color = "#16a085" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    height={size}
+    width={size}
+    fill={color}
+    viewBox="0 0 24 24"
+  >
+    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM21.41 6.34a1.25 1.25 0 0 0 0-1.77l-2-2a1.25 1.25 0 0 0-1.77 0l-1.83 1.83 3.75 3.75 1.85-1.81z" />
+  </svg>
+);
+
 const Playlist: React.FC = () => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(
     null
   );
-  const [hoveredSongId, setHoveredSongId] = useState<string | null>(null);
+  const [popupSongId, setPopupSongId] = useState<string | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [isTypingPlaylistName, setIsTypingPlaylistName] = useState(false);
   const [nameInputs, setNameInputs] = useState<Record<string, string>>({});
   const [linkInputs, setLinkInputs] = useState<Record<string, string>>({});
   const [tags, setTags] = useState<Tag[]>([]);
-  const [expandedTagPanel, setExpandedTagPanel] = useState<string | null>(null);
   const [creatingTagForSong, setCreatingTagForSong] = useState<string | null>(
     null
   );
@@ -27,7 +38,6 @@ const Playlist: React.FC = () => {
     API.getTags().then(setTags);
   }, []);
 
-  // Focus input when typing new playlist
   useEffect(() => {
     if (isTypingPlaylistName && playlistNameInputRef.current) {
       playlistNameInputRef.current.focus();
@@ -84,9 +94,8 @@ const Playlist: React.FC = () => {
           : p
       )
     );
-    if (expandedTagPanel === songId) setExpandedTagPanel(null);
-    if (creatingTagForSong === songId) setCreatingTagForSong(null);
-    setHoveredSongId(null);
+    setPopupSongId(null);
+    setCreatingTagForSong(null);
   };
 
   const handleDeletePlaylist = async (playlistId: string) => {
@@ -172,15 +181,13 @@ const Playlist: React.FC = () => {
     setNewTagName("");
     setNewTagColor("#2ecc71");
     setCreatingTagForSong(null);
-    setExpandedTagPanel(songId);
+    setPopupSongId(songId);
   };
 
-  // On clicking Playlists heading: clear selection to show all expanded
   const handlePlaylistsHeadingClick = () => {
     setSelectedPlaylistId(null);
-    setExpandedTagPanel(null);
+    setPopupSongId(null);
     setCreatingTagForSong(null);
-    setHoveredSongId(null);
   };
 
   return (
@@ -203,7 +210,6 @@ const Playlist: React.FC = () => {
         className={styles.playlistSelector}
         style={{ display: "flex", gap: "2rem" }}
       >
-        {/* Left playlist panel */}
         <div
           style={{
             width: "22%",
@@ -341,7 +347,6 @@ const Playlist: React.FC = () => {
           </ul>
         </div>
 
-        {/* Right 'Manage Songs' panel */}
         <div style={{ flexGrow: 1 }}>
           {(selectedPlaylistId
             ? playlists.filter((p) => p.id === selectedPlaylistId)
@@ -436,9 +441,6 @@ const Playlist: React.FC = () => {
                   listStyle: "none",
                   padding: 0,
                   margin: 0,
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "1rem",
                   fontFamily: "monospace",
                 }}
               >
@@ -458,17 +460,10 @@ const Playlist: React.FC = () => {
                         boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
                         width: "300px",
                         display: "flex",
-                        justifyContent: "space-between",
                         alignItems: "center",
-                        gap: "0.75rem",
+                        gap: "1rem",
                         cursor: "default",
                         fontFamily: "monospace",
-                      }}
-                      onMouseEnter={() => setHoveredSongId(song.id)}
-                      onMouseLeave={() => {
-                        setHoveredSongId(null);
-                        setExpandedTagPanel(null);
-                        setCreatingTagForSong(null);
                       }}
                     >
                       <a
@@ -488,12 +483,38 @@ const Playlist: React.FC = () => {
                       >
                         {song.name}
                       </a>
+
+                      <button
+                        aria-label="Edit song"
+                        title="Edit song"
+                        onClick={() =>
+                          setPopupSongId(popupSongId === song.id ? null : song.id)
+                        }
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 4,
+                          width: 28,
+                          height: 28,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <PenIcon size={18} color="#16a085" />
+                      </button>
+
                       <div
                         style={{
                           display: "flex",
-                          gap: "0.5rem",
+                          flexDirection: "column",
+                          gap: 6,
+                          minWidth: 80,
                           flexShrink: 0,
-                          alignItems: "center",
+                          alignItems: "flex-start",
+                          userSelect: "none",
                         }}
                       >
                         {song.tags.length > 0 ? (
@@ -502,13 +523,27 @@ const Playlist: React.FC = () => {
                               key={tag.id}
                               title={tag.name}
                               style={{
-                                backgroundColor: tag.tagColor,
-                                width: 18,
-                                height: 18,
-                                borderRadius: "50%",
-                                display: "inline-block",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                                fontWeight: 600,
+                                color: "#222",
+                                fontSize: 14,
+                                cursor: "default",
+                                whiteSpace: "nowrap",
                               }}
-                            />
+                            >
+                              <span
+                                style={{
+                                  backgroundColor: tag.tagColor,
+                                  width: 16,
+                                  height: 16,
+                                  borderRadius: "50%",
+                                  display: "inline-block",
+                                }}
+                              />
+                              {tag.name}
+                            </span>
                           ))
                         ) : (
                           <span
@@ -516,6 +551,7 @@ const Playlist: React.FC = () => {
                               fontSize: "0.8rem",
                               color: "#7f8c8d",
                               fontStyle: "italic",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             No tags
@@ -523,10 +559,8 @@ const Playlist: React.FC = () => {
                         )}
                       </div>
 
-                      {hoveredSongId === song.id && (
+                      {popupSongId === song.id && (
                         <div
-                          onMouseEnter={() => setHoveredSongId(song.id)}
-                          onMouseLeave={() => setHoveredSongId(null)}
                           style={{
                             position: "absolute",
                             top: "calc(100% + 8px)",
@@ -646,7 +680,9 @@ const Playlist: React.FC = () => {
                                   type="text"
                                   placeholder="Tag name"
                                   value={newTagName}
-                                  onChange={(e) => setNewTagName(e.target.value)}
+                                  onChange={(e) =>
+                                    setNewTagName(e.target.value)
+                                  }
                                   required
                                   style={{
                                     borderRadius: 6,
@@ -660,7 +696,9 @@ const Playlist: React.FC = () => {
                                 <input
                                   type="color"
                                   value={newTagColor}
-                                  onChange={(e) => setNewTagColor(e.target.value)}
+                                  onChange={(e) =>
+                                    setNewTagColor(e.target.value)
+                                  }
                                   style={{
                                     height: "40px",
                                     width: "70px",
